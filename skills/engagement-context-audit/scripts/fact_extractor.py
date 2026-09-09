@@ -529,6 +529,8 @@ def evaluate_fact_consistency(page_fact_list, base_url):
                             "evidence": f"{len(all_affected_urls)} separate page(s) publish conflicting figures for '{ent}': {'; '.join(details)}.",
                             "suggested_action": {
                                 "summary": f"Establish a single canonical price for '{ent}' and synchronize across all product listings and structured markup.",
+                                "technical_fix": f"Consolidate pricing for '{ent}' ({curr}, {invl}) in database/CMS and synchronize across all {len(all_affected_urls)} affected page(s): {', '.join(sorted(all_affected_urls))}. Ensure Schema.org Offer.price matches visible copy.",
+                                "creative_fix": f"Audit promotional banners, product descriptions, and footer disclosures across {', '.join(sorted(all_affected_urls))} to eliminate contradictory discount or legacy pricing copy for '{ent}'.",
                                 "priority": "high",
                                 "verification": f"Re-crawl {', '.join(sorted(all_affected_urls))} and verify identical pricing appears on all pages.",
                             },
@@ -560,7 +562,9 @@ def evaluate_fact_consistency(page_fact_list, base_url):
                         "impact": "AI assistants quote obsolete products as active commercial offerings, causing customer churn.",
                         "evidence": f"Lifecycle statuses differ across {len(urls)} page(s): {', '.join(f'{s[0]} on {s[1]}' for s in statuses)}.",
                         "suggested_action": {
-                            "summary": f"Update all pages referencing '{name}' to consistently reflect its current product lifecycle status.",
+                            "summary": f"Update all pages referencing '{name}' to consistently reflect its current product lifecycle status ({', '.join(sorted(urls))}).",
+                            "technical_fix": f"Set consistent Schema.org ItemAvailability ('https://schema.org/Discontinued' vs 'InStock') and update inventory flags across {', '.join(sorted(urls))}.",
+                            "creative_fix": f"Update product copy on {', '.join(sorted(urls))} with clear messaging indicating whether '{name}' is active, discontinued, or replaced by a newer model.",
                             "priority": "high",
                             "verification": f"Verify {', '.join(sorted(urls))} show consistent availability/discontinued markers.",
                         },
@@ -583,7 +587,13 @@ def evaluate_fact_consistency(page_fact_list, base_url):
                     "title": "Synchronize footer copyright year across templates",
                     "category": "freshness",
                     "rationale": f"Copyright years range from {oldest_year} to {newest_year} across sampled page templates.",
-                    "suggested_action": f"Standardize site footers to dynamically render current year ({CURRENT_YEAR}).",
+                    "suggested_action": {
+                        "summary": f"Standardize site footers across sampled pages to dynamically render the current year ({CURRENT_YEAR}) instead of outdated range ({oldest_year}–{newest_year}).",
+                        "technical_fix": f"Replace hardcoded footer copyright years across templates with dynamic template expression: © {{new Date().getFullYear()}} (current: {oldest_year}–{newest_year}).",
+                        "creative_fix": "Conduct a routine site-wide content freshness audit to ensure legacy copyright notices do not signal abandoned maintenance to AI crawlers.",
+                        "priority": "low",
+                        "verification": f"Verify footers across sampled pages render copyright year {CURRENT_YEAR}.",
+                    },
                 }
             )
 
@@ -648,8 +658,11 @@ def compare_ai_observations(fact_ledger, responses_file):
                                     "cause_id": "AI_FACT_CONFLICT",
                                     "evidence": f"Assistant asserted '{c_val}'. Canonical site prices for this entity: {set(entity_prices)}.",
                                     "suggested_action": {
-                                        "summary": "Publish canonical pricing.",
+                                        "summary": f"Publish unambiguous canonical pricing for '{claim.get('entity')}' ({list(set(entity_prices))[0] if entity_prices else 'canonical rate'}) on primary landing pages.",
+                                        "technical_fix": f"Embed machine-readable Schema.org PriceSpecification / Offer markup for '{claim.get('entity')}' on primary pages to correct assistant assertion '{c_val}'.",
+                                        "creative_fix": f"Place a prominent, unambiguous pricing summary table on primary product landing pages for '{claim.get('entity')}'.",
                                         "priority": "high",
+                                        "verification": f"Re-query AI assistant with pricing query for '{claim.get('entity')}' after search index refreshes.",
                                     },
                                 }
                             )

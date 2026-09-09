@@ -408,12 +408,18 @@ def audit_page_engagement(html_content, url, page_type="other", state=None):
         return (
             [
                 {
-                    "title": "HTML parsing failed",
+                    "title": f"HTML parsing warning on {url}",
                     "severity": "info",
                     "category": "extraction",
-                    "root_cause": "Malformed HTML",
+                    "root_cause": "Malformed HTML structure encountered during DOM traversal.",
                     "evidence": str(e),
-                    "suggested_action": {"summary": "Fix HTML syntax", "priority": "low"},
+                    "suggested_action": {
+                        "summary": f"Validate and repair HTML syntax on {url} to ensure parser extraction reliability.",
+                        "technical_fix": f"Resolve unclosed tags, malformed attributes, or encoding mismatches on {url}.",
+                        "creative_fix": None,
+                        "priority": "low",
+                        "verification": f"Re-fetch and parse {url} to verify valid DOM tree extraction.",
+                    },
                 }
             ],
             [],
@@ -434,20 +440,24 @@ def audit_page_engagement(html_content, url, page_type="other", state=None):
         # Now evaluate continuity: Does it offer the next logical step?
         action_found = any(cta in nav_text_lower for cta in ["buy", "cart", "subscribe", "contact", "order", "get"])
         if not action_found:
+            target_ent = facts["scoped_prices"][0]["entity"]
             findings.append(
                 {
-                    "title": "Pricing intent journey lacks explicit commercial continuation",
+                    "title": f"Pricing intent journey lacks explicit commercial continuation on {url}",
                     "severity": "medium",
                     "category": "engagement",
                     "cause_family": "EXPERIENCE.CONTINUITY",
                     "id": "INTENT_TO_LANDING_MISMATCH",
                     "cause_id": "INTENT_TO_LANDING_MISMATCH",
-                    "root_cause": "The page provides pricing facts for an entity but lacks explicit next-step commercial navigation or transactional actions.",
+                    "root_cause": f"The page provides pricing facts for '{target_ent}' but lacks explicit next-step commercial navigation or transactional actions.",
                     "confidence": "high",
-                    "evidence": f"Page {url} provides explicit commercial facts (pricing for '{facts['scoped_prices'][0]['entity']}'), satisfying a bottom-funnel intent, but provides no clear transactional or sales-contact navigation.",
+                    "evidence": f"Page {url} provides explicit commercial facts (pricing for '{target_ent}'), satisfying a bottom-funnel intent, but provides no clear transactional or sales-contact navigation.",
                     "suggested_action": {
-                        "summary": "Add explicit CTA (e.g., 'Buy', 'Contact Sales') immediately following the pricing facts to preserve task continuity.",
+                        "summary": f"Add explicit transactional CTA (e.g. 'Buy {target_ent}', 'Contact Sales') immediately following pricing facts on {url}.",
+                        "technical_fix": f"Embed accessible CTA button or link (<a class='cta-btn' href='/checkout'>Purchase {target_ent}</a>) adjacent to the price declaration on {url}.",
+                        "creative_fix": f"Align CTA copy on {url} with user commercial intent ('Get {target_ent}' or 'Start Free Trial') to reduce drop-off and bounce.",
                         "priority": "medium",
+                        "verification": f"Inspect {url} navigation links to confirm commercial transaction elements are present.",
                     },
                 }
             )
@@ -456,11 +466,17 @@ def audit_page_engagement(html_content, url, page_type="other", state=None):
     if not dom.h1_list:
         recommendations.append(
             {
-                "title": "Add descriptive H1 heading for visitor orientation",
+                "title": f"Add descriptive H1 heading on {url} for visitor orientation",
                 "category": "engagement",
                 "rationale": f"Page {url} is missing an H1 heading.",
-                "summary": "Ensure every page provides a clear <h1> describing its specific value proposition or content.",
-                "suggested_action": "Ensure every page provides a clear <h1> describing its specific value proposition or content.",
+                "summary": f"Ensure every page provides a clear <h1> describing its specific value proposition or content on {url}.",
+                "suggested_action": {
+                    "summary": f"Ensure every page provides a clear <h1> describing its specific value proposition or content on {url}.",
+                    "technical_fix": f"Insert a semantic <h1> element inside <main> on {url}.",
+                    "creative_fix": f"Craft an entity-anchored <h1> on {url} that immediately confirms the brand and page purpose to incoming visitors.",
+                    "priority": "medium",
+                    "verification": f"Fetch {url} and verify exactly one semantic <h1> heading is present.",
+                },
             }
         )
     elif state and "entities" in state and url in state["entities"]:
@@ -468,20 +484,25 @@ def audit_page_engagement(html_content, url, page_type="other", state=None):
         h1_text = " ".join(dom.h1_list).lower()
         anchor_found = any(ent.lower() in h1_text for ent in entities if len(ent) > 2)
         if entities and not anchor_found:
+            primary_ent = entities[0]
+            existing_h1 = dom.h1_list[0] if dom.h1_list else ""
             findings.append(
                 {
                     "category": "engagement",
-                    "title": "Broken Information Scent: Entity not anchored in primary heading",
+                    "title": f"Broken Information Scent on {url}: Entity '{primary_ent}' not anchored in primary heading",
                     "severity": "medium",
                     "confidence": "high",
-                    "root_cause": "The page's primary <h1> does not contain the name of the canonical entity, leading to user disorientation upon arrival.",
+                    "root_cause": f"The primary <h1> on {url} ('{existing_h1}') does not contain canonical entity '{primary_ent}', leading to user disorientation upon arrival.",
                     "cause_family": "EXPERIENCE.CONTINUITY",
                     "id": "LOW_INFORMATION_SCENT",
                     "cause_id": "LOW_INFORMATION_SCENT",
-                    "evidence": f"Entities {entities} not found in H1 '{dom.h1_list[0]}'.",
+                    "evidence": f"Entities {entities} not found in H1 '{existing_h1}'.",
                     "suggested_action": {
-                        "summary": "Rewrite the <h1> to explicitly include the primary entity name.",
+                        "summary": f"Rewrite primary <h1> on {url} to explicitly include canonical entity '{primary_ent}'.",
+                        "technical_fix": f"Update <h1> tag on {url} from '{existing_h1}' to incorporate '{primary_ent}'.",
+                        "creative_fix": f"Craft an informative hero headline on {url} such as '{primary_ent} — [Core Differentiating Value Proposition]'.",
                         "priority": "medium",
+                        "verification": f"Re-parse {url} and confirm <h1> contains entity '{primary_ent}'.",
                     },
                 }
             )

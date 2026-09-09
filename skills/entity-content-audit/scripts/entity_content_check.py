@@ -405,19 +405,37 @@ def audit(base, domain, inv=None, state_file=None):
                     "impact": "AI models cannot resolve the brand entity with high confidence, leading to entity collisions and ungrounded answers.",
                     "evidence": f"No JSON-LD Organization block or og:site_name found on {base}/.",
                     "suggested_action": {
-                        "summary": "Publish Organization JSON-LD markup declaring name, url, logo, and sameAs links.",
+                        "summary": f"Publish Schema.org Organization JSON-LD markup on {base}/ declaring brand name '{brand_name or urlparse(base).netloc}', logo, and authoritative profiles.",
+                        "technical_fix": f"""Add machine-readable Organization markup to <head> on {base}/:
+<script type="application/ld+json">
+{{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "{brand_name or urlparse(base).netloc}",
+  "url": "{base}",
+  "logo": "{base}/logo.png",
+  "sameAs": ["https://twitter.com/{urlparse(base).netloc.split('.')[0]}", "https://www.linkedin.com/company/{urlparse(base).netloc.split('.')[0]}"]
+}}
+</script>""",
+                        "creative_fix": f"Audit {base}/ header and footer to ensure brand identity and contact information are explicitly declared in human-readable text.",
                         "priority": "medium",
-                        "verification": "Inspect homepage JSON-LD and confirm Organization schema parses validly.",
+                        "verification": f"Inspect {base}/ JSON-LD with Google Rich Results Test to confirm Organization entity parses cleanly.",
                     },
                 }
             )
         else:
             recommendations.append(
                 {
-                    "title": "Add Organization JSON-LD schema",
+                    "title": f"Add Organization JSON-LD schema for '{brand_name}'",
                     "category": "entity-identity",
                     "rationale": f"Brand '{brand_name}' is stated in human-readable text but lacks machine-explicit JSON-LD Organization markup.",
-                    "suggested_action": "Add an Organization JSON-LD block linking canonical brand name, logo, and authoritative sameAs profiles.",
+                    "suggested_action": {
+                        "summary": f"Add an Organization JSON-LD block on {base}/ linking canonical brand '{brand_name}', logo, and authoritative sameAs profiles.",
+                        "technical_fix": f"Embed Schema.org Organization JSON-LD on {base}/ with 'name': '{brand_name}' and verified 'sameAs' profile URLs.",
+                        "creative_fix": f"Ensure '{brand_name}' is prominently anchored in the homepage hero section and header brand element.",
+                        "priority": "medium",
+                        "verification": f"Verify {base}/ structured data contains valid Organization schema.",
+                    },
                 }
             )
 
@@ -454,9 +472,11 @@ def audit(base, domain, inv=None, state_file=None):
                                 "impact": "AI assistants (e.g. ChatGPT Search, Perplexity Shopping) may refuse to recommend the product due to missing pricing or stock status.",
                                 "evidence": f"Product JSON-LD on {purl} lacks: {', '.join(missing)}. Current score: {res['score']}/1.0.",
                                 "suggested_action": {
-                                    "summary": f"Add {', '.join(missing)} to the Product JSON-LD schema.",
+                                    "summary": f"Add missing attribute(s) ({', '.join(missing)}) to Product JSON-LD on {purl}.",
+                                    "technical_fix": f"Update Product JSON-LD on {purl} to populate missing properties: " + ", ".join(f'"{m}": "<value>"' for m in missing) + ".",
+                                    "creative_fix": f"Ensure product copy on {purl} explicitly mentions {', '.join(missing)} in visible specifications alongside structured data.",
                                     "priority": "medium",
-                                    "verification": "Check the Google Rich Results Test to confirm the properties are populated.",
+                                    "verification": f"Test {purl} with Google Rich Results Test to confirm answerability score reaches 1.0 (currently {res['score']}/1.0).",
                                 },
                             }
                         )

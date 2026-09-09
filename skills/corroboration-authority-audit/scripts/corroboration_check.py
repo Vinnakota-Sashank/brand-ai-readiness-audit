@@ -126,12 +126,25 @@ def audit(base, domain, inv=None, state_file=None):
 
     # 3. Check declared authority links and perform Bounded Claim Corroboration
     if not sameas_urls:
+        brand_slug = (brand_name or urlparse(base).netloc.split(".")[0]).lower().replace(" ", "")
         recommendations.append(
             {
-                "title": "Establish an integrated brand identity block with authoritative sameAs links",
+                "title": f"Establish an integrated brand identity block with authoritative sameAs links for '{brand_name or base}'",
                 "category": "corroboration",
-                "rationale": "No sameAs links were declared. Adding them enables bounded claim corroboration.",
-                "suggested_action": "Add sameAs URLs to Organization JSON-LD.",
+                "rationale": f"No sameAs links were declared on {base}/. Adding authoritative profile links enables external identity corroboration by AI assistants.",
+                "suggested_action": {
+                    "summary": f"Declare authoritative sameAs profile links in Organization JSON-LD on {base}/.",
+                    "technical_fix": f"""Add sameAs array to Schema.org Organization markup on {base}/:
+"sameAs": [
+  "https://www.wikidata.org/wiki/...",
+  "https://en.wikipedia.org/wiki/{brand_slug.capitalize()}",
+  "https://www.linkedin.com/company/{brand_slug}",
+  "https://twitter.com/{brand_slug}"
+]""",
+                    "creative_fix": f"Verify and claim official brand profiles across Wikidata, LinkedIn, Twitter/X, and Crunchbase for '{brand_name or base}'.",
+                    "priority": "medium",
+                    "verification": f"Inspect {base}/ JSON-LD and verify sameAs links are present and return HTTP 200.",
+                },
             }
         )
         return {"status": "ok", "findings": findings, "recommendations": recommendations, "observations": observations}
@@ -173,9 +186,10 @@ def audit(base, domain, inv=None, state_file=None):
             else:
                 # We check full text as a weak fallback
                 if brand_lower not in ext_html.lower():
+                    u_host = urlparse(u).hostname or u
                     findings.append(
                         {
-                            "title": "Authority link fails to corroborate brand identity claim",
+                            "title": f"Authority link at {u_host} fails to corroborate brand identity for '{brand_name}'",
                             "severity": "medium",
                             "category": "corroboration",
                             "cause_family": "AUTHORITY.IDENTITY_CORROBORATION",
@@ -185,13 +199,17 @@ def audit(base, domain, inv=None, state_file=None):
                             "confidence": "high",
                             "evidence": f"The declared sameAs link {u} is reachable, but neither its title, og:site_name, nor body text explicitly state the brand name '{brand_name}'.",
                             "suggested_action": {
-                                "summary": f"Ensure the external authority page at {urlparse(u).hostname} explicitly claims the canonical brand name.",
+                                "summary": f"Ensure external authority page at {u_host} explicitly claims canonical brand '{brand_name}'.",
+                                "technical_fix": f"Update declared profile at {u} to incorporate brand name '{brand_name}' in <title>, og:site_name, or bio text.",
+                                "creative_fix": f"Align public profile descriptions and entity nomenclature on {u_host} with the official brand name '{brand_name}'.",
                                 "priority": "medium",
+                                "verification": f"Re-fetch {u} and confirm '{brand_name}' appears in external page title or metadata.",
                             },
                         }
                     )
 
     if broken:
+        broken_urls = [b.split(" ")[0] for b in broken]
         findings.append(
             {
                 "category": "corroboration",
@@ -205,9 +223,11 @@ def audit(base, domain, inv=None, state_file=None):
                 "impact": "AI models attempting to verify entity identity against independent authorities encounter broken links, reducing confidence.",
                 "evidence": f"Declared sameAs links returned error status: {'; '.join(broken)}.",
                 "suggested_action": {
-                    "summary": "Update or remove broken sameAs URLs in Organization JSON-LD markup.",
+                    "summary": f"Update or remove {len(broken)} broken sameAs URL(s) in Organization JSON-LD on {base}/: {', '.join(broken_urls)}.",
+                    "technical_fix": f"Remove dead URLs ({', '.join(broken_urls)}) from the sameAs array in {base}/ Organization JSON-LD, or update them to valid profile endpoints.",
+                    "creative_fix": f"Ensure all linked corporate registries and social profiles for '{brand_name or base}' are active and claim the official domain.",
                     "priority": "medium",
-                    "verification": "Confirm all declared sameAs URLs return HTTP 200.",
+                    "verification": f"Send HTTP GET requests to all updated sameAs URLs on {base}/ and confirm HTTP 200 responses.",
                 },
             }
         )

@@ -232,12 +232,37 @@ def assemble(site, candidates, records, checks, coverage=None, browser=None):
         }
 
         sugg_action = item.get("suggested_action", {})
+        if isinstance(sugg_action, str):
+            sugg_action = {"summary": sugg_action}
+
+        scope = item.get("scope") or site
+        check_obj = catalogue.get(item.get("check_id"), {})
+        check_title = check_obj.get("title") or item.get("title") or item.get("check_id")
+        solution_guide = check_obj.get("solution") or ""
+
+        # Construct dynamic, evidence-grounded dual-track recommendations
+        action_summary = sugg_action.get("summary")
+        if not action_summary or action_summary.startswith("Remediate check"):
+            action_summary = f"Remediate {check_title} for {scope}." + (f" Guidance: {solution_guide}" if solution_guide else "")
+
+        tech_fix = sugg_action.get("technical_fix")
+        if not tech_fix or tech_fix.startswith("Update site configuration"):
+            tech_fix = f"Implement technical remediation for {check_title} on {scope}. {solution_guide}".strip()
+
+        creative_fix = sugg_action.get("creative_fix")
+        if not creative_fix and (check_obj.get("benefit_area") in ("E", "B") or check_obj.get("solution_level") == "E"):
+            creative_fix = f"Align on-page copy and content hierarchy on {scope} to reinforce entity clarity and user journey continuity."
+
+        verification = sugg_action.get("verification")
+        if not verification or "sensor to confirm resolution" in verification:
+            verification = f"Re-evaluate {scope} using {owner_skill} to confirm {check_title} is resolved without regression."
+
         action_obj = {
-            "summary": sugg_action.get("summary", f"Remediate check {item['check_id']} finding."),
+            "summary": action_summary,
             "priority": sugg_action.get("priority", sev),
-            "technical_fix": sugg_action.get("technical_fix", f"Update site configuration or markup for {item['check_id']}."),
-            "creative_fix": sugg_action.get("creative_fix", None),
-            "verification": sugg_action.get("verification", f"Re-run {owner_skill} sensor to confirm resolution."),
+            "technical_fix": tech_fix,
+            "creative_fix": creative_fix,
+            "verification": verification,
         }
 
         finding = {
