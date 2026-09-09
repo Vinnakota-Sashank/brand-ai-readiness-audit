@@ -1,0 +1,24 @@
+{
+  "skill_name": "engagement-context-audit",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Evaluate visitor orientation and heading information scent on https://example.com.",
+      "expected_output": "Entity-to-H1 anchoring evaluation and intent continuity analysis.",
+      "assertions": [
+        "Primary H1 is cross-referenced against canonical entity name",
+        "Pricing intent pages are checked for commercial CTA reachability",
+        "Missing H1 is emitted as an advisory recommendation"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Check post-citation intent continuity and CTA reachability on landing pages on https://example.com.",
+      "expected_output": "Evaluation of CTA placement within the first 3 interactive elements.",
+      "assertions": [
+        "Commercial landing pages without purchase/demo CTA trigger INTENT_TO_LANDING_MISMATCH",
+        "Visual hero headings in og:title or banner roles are evaluated as fallbacks"
+      ]
+    }
+  ]
+}

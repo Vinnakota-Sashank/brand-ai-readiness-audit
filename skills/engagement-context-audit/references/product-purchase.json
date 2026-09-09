@@ -1,0 +1,24 @@
+{
+  "intent_family": "product_purchase",
+  "page_type": "product_detail",
+  "description": "Visitor arriving with direct purchase intent seeking product specifications, stock availability, and checkout.",
+  "required_on_page_facts": [
+    "product_name",
+    "price",
+    "availability",
+    "specifications",
+    "purchase_cta"
+  ],
+  "expected_actions": [
+    "add_to_cart",
+    "buy_now",
+    "checkout",
+    "order",
+    "request_quote"
+  ],
+  "bounce_risk_signals": [
+    "missing_specifications",
+    "no_clear_buy_button",
+    "broken_checkout_handoff"
+  ]
+}

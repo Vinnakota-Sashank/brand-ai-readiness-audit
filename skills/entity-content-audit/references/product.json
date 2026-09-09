@@ -1,0 +1,60 @@
+{
+  "entity_type": "product",
+  "schema_org_type": "Product",
+  "primary_surfaces": [
+    "/products/*",
+    "/item/*",
+    "/p/*",
+    "/shop/*"
+  ],
+  "core_attributes": [
+    {
+      "name": "name",
+      "type": "string",
+      "required": false,
+      "high_representation_risk": true
+    },
+    {
+      "name": "brand",
+      "type": "string",
+      "required": false,
+      "high_representation_risk": true
+    },
+    {
+      "name": "price",
+      "type": "numeric",
+      "volatile": true,
+      "required": false,
+      "high_representation_risk": true
+    },
+    {
+      "name": "currency",
+      "type": "string",
+      "required": false,
+      "high_representation_risk": true
+    },
+    {
+      "name": "availability",
+      "type": "string",
+      "volatile": true,
+      "required": false,
+      "high_representation_risk": true
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "required": false,
+      "high_representation_risk": false
+    },
+    {
+      "name": "sku",
+      "type": "string",
+      "required": false,
+      "high_representation_risk": false
+    }
+  ],
+  "verification_conditions": {
+    "price_consistency": "Product page HTML price == JSON-LD offers.price == Catalog list price",
+    "availability_consistency": "JSON-LD availability state == Add to Cart button enabled state"
+  }
+}

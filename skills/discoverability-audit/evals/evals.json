@@ -1,0 +1,25 @@
+{
+  "skill_name": "discoverability-audit",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Check if AI retrieval crawlers (OAI-SearchBot, Claude-SearchBot, PerplexityBot) are allowed in robots.txt on https://example.com.",
+      "expected_output": "Access status per crawler distinguishing retrieval from training bots.",
+      "assertions": [
+        "Retrieval crawlers are evaluated per RFC 9309 rules",
+        "Training token blocks (e.g. GPTBot) are reported as observations, not critical defects",
+        "Raw HTML visible word count is reported"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Audit https://example.com for meta robots noindex directives, canonical consolidation, and Single-Page Application (SPA) raw rendering gaps.",
+      "expected_output": "Evaluation of meta directives, canonical targets, and raw unrendered HTML word count.",
+      "assertions": [
+        "Noindex directives on landing page trigger critical NOINDEX_EXCLUSION findings",
+        "External canonical tags trigger CANONICAL_FRAGMENTATION findings",
+        "Raw HTML word count < 25 words with unrendered app container triggers RENDERED_CONTENT_GAP"
+      ]
+    }
+  ]
+}

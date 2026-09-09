@@ -1,0 +1,44 @@
+{
+  "entity_type": "organization",
+  "schema_org_type": "Organization",
+  "primary_surfaces": [
+    "/",
+    "/about",
+    "/contact"
+  ],
+  "core_attributes": [
+    {
+      "name": "name",
+      "type": "string",
+      "required": false,
+      "high_representation_risk": true
+    },
+    {
+      "name": "url",
+      "type": "url",
+      "required": false,
+      "high_representation_risk": true
+    },
+    {
+      "name": "logo",
+      "type": "url",
+      "required": false,
+      "high_representation_risk": false
+    },
+    {
+      "name": "contactPoint",
+      "type": "ContactPoint",
+      "required": false,
+      "high_representation_risk": true
+    },
+    {
+      "name": "sameAs",
+      "type": "Array<url>",
+      "required": false,
+      "high_representation_risk": true
+    }
+  ],
+  "verification_conditions": {
+    "identity_corroboration": "sameAs URLs return HTTP 200 and contain the brand name claim."
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "brand-ai-readiness-audit",
+  "version": "1.0.0",
+  "description": "Empirically validated marketplace for auditing AI discoverability, answerability, GEO citability, fact consistency, and post-click engagement.",
+  "skills": [
+    {"id": "audit-orchestrator", "path": "skills/audit-orchestrator", "entrypoint": true},
+    {"id": "discoverability-audit", "path": "skills/discoverability-audit"},
+    {"id": "entity-content-audit", "path": "skills/entity-content-audit"},
+    {"id": "fact-consistency-audit", "path": "skills/fact-consistency-audit"},
+    {"id": "corroboration-authority-audit", "path": "skills/corroboration-authority-audit"},
+    {"id": "geo-content-audit", "path": "skills/geo-content-audit"},
+    {"id": "engagement-context-audit", "path": "skills/engagement-context-audit"}
+  ]
+}

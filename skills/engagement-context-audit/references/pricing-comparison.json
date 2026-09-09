@@ -1,0 +1,24 @@
+{
+  "intent_family": "pricing_comparison",
+  "page_type": "pricing",
+  "description": "Visitor arriving from an AI assistant seeking pricing clarity, tier comparisons, and commercial terms.",
+  "required_on_page_facts": [
+    "tier_names",
+    "price_points",
+    "billing_interval",
+    "feature_matrix",
+    "commercial_cta"
+  ],
+  "expected_actions": [
+    "signup",
+    "free_trial",
+    "contact_sales",
+    "get_started",
+    "subscribe"
+  ],
+  "bounce_risk_signals": [
+    "hidden_pricing",
+    "missing_cta_above_the_fold",
+    "unclear_feature_differences"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "skill_name": "corroboration-authority-audit",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Probe declared sameAs authority links on https://example.com to corroborate brand identity.",
+      "expected_output": "Authority link reachability status and claim corroboration evidence.",
+      "assertions": [
+        "Broken 4xx/5xx sameAs links trigger BROKEN_AUTHORITY_ANCHOR findings",
+        "Missing sameAs links trigger advisory recommendations",
+        "Probing enforces strict 5-second timeout and 512KB payload limits"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Verify whether third-party authority nodes (Wikidata, LinkedIn, Wikipedia) validate the canonical brand identity on https://example.com.",
+      "expected_output": "Validation status of external knowledge graph identity anchors.",
+      "assertions": [
+        "HTTP 200 response on Wikidata/LinkedIn substantiates identity",
+        "Private network and non-HTTPS sameAs links are rejected by SSRF filters"
+      ]
+    }
+  ]
+}

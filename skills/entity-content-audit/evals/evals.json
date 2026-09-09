@@ -1,0 +1,25 @@
+{
+  "skill_name": "entity-content-audit",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Extract Organization and Product JSON-LD entities from https://example.com and compute the Answerability Index.",
+      "expected_output": "Entity snapshot and weighted material attribute completeness score.",
+      "assertions": [
+        "Schema.org Organization markup is evaluated",
+        "Decoupled @graph Offer nodes are linked to target Products",
+        "Non-HTML sitemaps are strictly excluded from answerability scoring"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Check whether product pages on https://example.com declare complete commercial attributes (price, currency, availability, description, sku).",
+      "expected_output": "Attribute completeness report for commercial product entities.",
+      "assertions": [
+        "Missing price or currency triggers INCOMPLETE_OFFER_ATTRIBUTES",
+        "Product schema without name triggers MATERIAL_ENTITY_AMBIGUITY",
+        "Answerability score reflects percentage of complete commercial attributes"
+      ]
+    }
+  ]
+}

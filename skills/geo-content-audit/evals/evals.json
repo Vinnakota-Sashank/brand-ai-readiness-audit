@@ -1,0 +1,25 @@
+{
+  "skill_name": "geo-content-audit",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Evaluate content on https://example.com for Generative Engine Optimization (GEO) causal mechanisms and statistical evidence.",
+      "expected_output": "AutoGEO scoring and mechanistic depth analysis.",
+      "assertions": [
+        "Mechanistic causal conjunctions (how, why, because, enables) are counted",
+        "Numerical evidence and benchmark statistics are detected",
+        "Shallow pages trigger MISSING_IN_DEPTH_MECHANISMS findings"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Audit article content on https://example.com for Princeton KDD 2024 citation vectors: primary source citations, author credentials, and direct answer leads.",
+      "expected_output": "Evaluation of outbound citations, author bylines, and Q&A formatting.",
+      "assertions": [
+        "Outbound links to authority domains are tracked",
+        "Author credentials (MD, PhD, Dr.) are detected",
+        "Absence of question headings triggers FAQ formatting recommendations"
+      ]
+    }
+  ]
+}

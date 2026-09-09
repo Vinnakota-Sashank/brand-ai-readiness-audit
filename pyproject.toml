@@ -1,0 +1,40 @@
+[project]
+name = "adobe-brand-visibility-skill"
+version = "1.0.0"
+description = "Brand AI-Readiness & Visibility Marketplace - Adobe Hackathon Round 3"
+authors = [{ name = "Jayanth Reddy Konda" }]
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "jsonschema>=4.20.0",
+    "ruff>=0.4.0",
+    "flake8>=7.0.0",
+    "mypy>=1.10.0"
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "SIM"]
+ignore = [
+    "E501",   # line length
+    "B008",   # function call in default argument
+    "SIM105", # contextlib.suppress
+    "BLE001", # blind exception catching in scrapers
+    "S110",   # try-except-pass
+    "DTZ005", # datetime without tz
+    "PLW1510", # subprocess.run check argument
+    "E402",    # module level import not at top (sys.path.insert)
+    "B904",    # raise ... from err
+    "SIM108"   # ternary operator
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

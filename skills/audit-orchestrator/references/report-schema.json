@@ -1,0 +1,290 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "BrandAIReadinessAuditReport",
+  "type": "object",
+  "required": [
+    "site",
+    "audited_at",
+    "audit_status",
+    "summary",
+    "findings"
+  ],
+  "properties": {
+    "site": {
+      "type": "string"
+    },
+    "audited_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "audit_status": {
+      "type": "string",
+      "enum": [
+        "complete",
+        "partial",
+        "failed"
+      ]
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "total_findings",
+        "critical",
+        "high",
+        "medium",
+        "low"
+      ],
+      "properties": {
+        "total_findings": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "critical": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "high": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "medium": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "low": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "proactive_actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "category",
+          "summary",
+          "priority"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "technical_fix": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "creative_fix": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low"
+            ]
+          },
+          "verification": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "severity",
+          "category",
+          "root_cause",
+          "evidence",
+          "suggested_action"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low"
+            ]
+          },
+          "category": {
+            "type": "string"
+          },
+          "root_cause": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "object",
+            "required": [
+              "summary",
+              "scope",
+              "sources"
+            ],
+            "properties": {
+              "summary": {
+                "type": "string"
+              },
+              "scope": {
+                "type": "string"
+              },
+              "sources": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "url",
+                    "type",
+                    "observation"
+                  ],
+                  "properties": {
+                    "url": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    },
+                    "observation": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          "suggested_action": {
+            "type": "object",
+            "required": [
+              "summary",
+              "priority"
+            ],
+            "properties": {
+              "summary": {
+                "type": "string"
+              },
+              "technical_fix": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "creative_fix": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "priority": {
+                "type": "string",
+                "enum": [
+                  "critical",
+                  "high",
+                  "medium",
+                  "low"
+                ]
+              },
+              "verification": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          "impact": {
+            "type": "string"
+          },
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ]
+          },
+          "actual_band": {
+            "type": "string"
+          },
+          "priority_index": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "related_check_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "finding_kind": {
+            "type": "string"
+          },
+          "queue": {
+            "type": "string"
+          },
+          "difficulty": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "difficulty_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "observations": {
+      "type": "array"
+    },
+    "dropped_findings": {
+      "type": "array"
+    },
+    "coverage": {
+      "type": "object"
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false
+}

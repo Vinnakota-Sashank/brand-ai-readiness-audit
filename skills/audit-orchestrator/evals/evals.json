@@ -1,0 +1,25 @@
+{
+  "skill_name": "audit-orchestrator",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Run a full Brand AI-Readiness and GEO audit against https://example.com and output a strictly validated Draft-07 JSON report.",
+      "expected_output": "A complete, schema-compliant JSON report detailing findings, proactive actions, and audit summary.",
+      "assertions": [
+        "The output strictly validates against report-schema.json (Exit code 0)",
+        "The summary object contains total_findings, critical, high, medium, and low counts",
+        "All findings include dual-track suggested_action (technical_fix and creative_fix)"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Perform an offline deterministic audit using pre-acquired inventory at inv.json to detect pricing, robots.txt, and entity conflicts.",
+      "expected_output": "A deterministic JSON audit report identifying known defects without live network probes.",
+      "assertions": [
+        "The report identifies all injected synthetic defects",
+        "The orchestrator preserves the caller inventory file without deletion",
+        "Execution finishes in under 5 seconds"
+      ]
+    }
+  ]
+}
