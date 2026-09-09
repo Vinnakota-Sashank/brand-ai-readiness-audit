@@ -24,6 +24,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 if SCRIPT_DIR not in sys.path:
     sys.path.insert(0, SCRIPT_DIR)
 
+# pyrefly: ignore [missing-import]
 from safe_fetch import safe_fetch
 
 QUESTION_RE = re.compile(r"^(what|why|how|when|where|who|which|can|does|is|are)\b|\?$", re.IGNORECASE)
@@ -226,11 +227,11 @@ def audit(base, domain, inv=None, state_file=None):
                     "evidence": f"Page {url} lacks causal conjunctions or explanatory depth markers (depth score: {depth_score}/10).",
                     "impact": "Generative Engines prefer to cite sources that offer deep explanatory context rather than surface-level assertions.",
                     "suggested_action": {
-                        "summary": f"Expand copy on {url} to explain underlying mechanisms and causal context ('how' and 'why') (current depth score: {depth_score}/10).",
-                        "technical_fix": f"Implement structured FAQPage schema on {url} with machine-parsable Question-Answer pairs detailing product architecture and mechanisms.",
-                        "creative_fix": f"Rewrite key product/service paragraphs on {url} using causal conjunctions ('because', 'due to', 'enables', 'as a result') following the Inverted-Pyramid Citability Pattern (40-60 word answer capsules).",
+                        "summary": "Expand the content to explain the underlying mechanisms and context ('how' and 'why').",
+                        "technical_fix": "Incorporate FAQ structured schema explaining product value propositions.",
+                        "creative_fix": "Rewrite product descriptions to use causal conjunctions ('because', 'due to', 'enables').",
                         "priority": "medium",
-                        "verification": f"Scan text on {url} for causal depth markers and ensure depth score >= 3.",
+                        "verification": "Scan text for causal depth markers and ensure depth score >= 3.",
                     },
                 }
             )
@@ -238,24 +239,16 @@ def audit(base, domain, inv=None, state_file=None):
         # 2. Princeton Vector: Quantifiable Evidence & Statistics - +37.1% boost
         stat_matches = _STAT_RE.findall(full_text)
         if len(stat_matches) == 0 and total_words > 100:
-            rec_summary = f"Substantiate claims on {url} with specific, verifiable data, statistics, or named benchmark metrics (+37% GEO citation boost)."
             recommendations.append(
                 {
                     "id": "PROACTIVE.GEO.STATISTICAL_EVIDENCE.001",
-                    "title": f"Substantiate content on {url} with quantifiable evidence and statistics",
+                    "title": "Substantiate content with quantifiable evidence and statistics",
                     "category": "content",
-                    "summary": rec_summary,
+                    "summary": f"Substantiate claims on {url} with specific, verifiable data, statistics, or named benchmark metrics (+37% GEO citation boost).",
                     "priority": "medium",
-                    "technical_fix": f"Add verified numerical benchmarks and percentage metrics into specification tables on {url}.",
-                    "creative_fix": f"Include quantified performance gains or case study statistics in body paragraphs on {url}.",
-                    "verification": f"Confirm numbers and percentage metrics are visible in the body text of {url}.",
-                    "suggested_action": {
-                        "summary": rec_summary,
-                        "priority": "medium",
-                        "technical_fix": f"Add verified numerical benchmarks and percentage metrics into specification tables on {url}.",
-                        "creative_fix": f"Include quantified performance gains or case study statistics in body paragraphs on {url}.",
-                        "verification": f"Confirm numbers and percentage metrics are visible in the body text of {url}.",
-                    },
+                    "technical_fix": "Add verified numerical benchmarks and percentage metrics into specification tables.",
+                    "creative_fix": "Include quantified performance gains or case study statistics in body paragraphs.",
+                    "verification": "Confirm numbers and percentage metrics are visible in the body text.",
                 }
             )
 
@@ -267,24 +260,16 @@ def audit(base, domain, inv=None, state_file=None):
                 for c in parser.outbound_citations
             )
             if not has_auth_citation:
-                rec_summary = f"Article {url} lacks outbound links to primary sources (academic papers, standards bodies, government data). Citing primary sources increases LLM citation probability by +115%."
                 recommendations.append(
                     {
                         "id": "PROACTIVE.GEO.AUTHORITY_CITATIONS.001",
-                        "title": f"Cite primary authoritative external sources on {url}",
+                        "title": "Cite primary authoritative external sources",
                         "category": "content",
-                        "summary": rec_summary,
+                        "summary": f"Article {url} lacks outbound links to primary sources (academic papers, standards bodies, government data). Citing primary sources increases LLM citation probability by +115%.",
                         "priority": "low",
-                        "technical_fix": f"Add outbound anchor links on {url} pointing to DOI papers, Wikipedia, or official standards bodies (.gov, .edu, ISO, BIS).",
-                        "creative_fix": f"Attribute key industry claims on {url} to recognized research studies or authoritative datasets.",
-                        "verification": f"Verify outbound citation links on {url} resolve with HTTP 200.",
-                        "suggested_action": {
-                            "summary": rec_summary,
-                            "priority": "low",
-                            "technical_fix": f"Add outbound anchor links on {url} pointing to DOI papers, Wikipedia, or official standards bodies (.gov, .edu, ISO, BIS).",
-                            "creative_fix": f"Attribute key industry claims on {url} to recognized research studies or authoritative datasets.",
-                            "verification": f"Verify outbound citation links on {url} resolve with HTTP 200.",
-                        },
+                        "technical_fix": "Add outbound anchor links pointing to DOI papers, Wikipedia, or official standards.",
+                        "creative_fix": "Attribute key industry claims to recognized research studies or authoritative datasets.",
+                        "verification": "Verify outbound citation links resolve with HTTP 200.",
                     }
                 )
 
@@ -308,24 +293,16 @@ def audit(base, domain, inv=None, state_file=None):
         has_qa_headings = any(h.strip().endswith("?") or bool(re.match(r"^(what|why|how|when|where|who|can|is|does)\b", h.lower())) for h in parser.headings)
 
         if not has_faq_schema and not has_qa_headings and total_words > 200:
-            rec_summary = f"Page {url} has substantive text ({total_words} words) but lacks explicit Q&A heading anchors and FAQPage Schema.org markup. Field research demonstrates a 2.5x citation boost in Perplexity for sites structured with direct Q&A pairings."
             recommendations.append(
                 {
                     "id": "PROACTIVE.GEO.FAQ_QUESTION_ANSWER.001",
-                    "title": f"Implement question-answering structure and FAQ schema on {url}",
+                    "title": "Implement question-answering structure and FAQ schema",
                     "category": "content",
-                    "summary": rec_summary,
+                    "summary": f"Page {url} has substantive text ({total_words} words) but lacks explicit Q&A heading anchors and FAQPage Schema.org markup. Field research demonstrates a 2.5x citation boost in Perplexity for sites structured with direct Q&A pairings.",
                     "priority": "medium",
-                    "technical_fix": f"Add Schema.org FAQPage structured data around question-answer pairs on {url}.",
-                    "creative_fix": f"Format key sections on {url} as natural user questions with direct answers in the first 40-60 words.",
-                    "verification": f"Confirm FAQPage structured markup on {url} validates without syntax errors.",
-                    "suggested_action": {
-                        "summary": rec_summary,
-                        "priority": "medium",
-                        "technical_fix": f"Add Schema.org FAQPage structured data around question-answer pairs on {url}.",
-                        "creative_fix": f"Format key sections on {url} as natural user questions with direct answers in the first 40-60 words.",
-                        "verification": f"Confirm FAQPage structured markup on {url} validates without syntax errors.",
-                    },
+                    "technical_fix": "Add Schema.org FAQPage structured data around question-answer pairs.",
+                    "creative_fix": "Format key product/service sections as natural user questions with direct answers in the first 40-60 words.",
+                    "verification": "Confirm FAQPage structured markup validates and question headings end with '?' or question words.",
                 }
             )
 
@@ -333,71 +310,47 @@ def audit(base, domain, inv=None, state_file=None):
         if ptype == "article" and total_words > 150:
             has_credentials = bool(_CREDENTIAL_RE.search(full_text)) or len(parser.author_bylines) > 0
             if not has_credentials:
-                rec_summary = f"Article {url} lacks named author credentials (MD, PhD, Dr., job title). Named credentials increase AI engine trust weighting."
                 recommendations.append(
                     {
                         "id": "PROACTIVE.GEO.AUTHOR_CREDENTIALS.001",
-                        "title": f"Add author byline with professional credentials on {url}",
+                        "title": "Add author byline with professional credentials",
                         "category": "content",
-                        "summary": rec_summary,
+                        "summary": f"Article {url} lacks named author credentials (MD, PhD, Dr., job title). Named credentials increase AI engine trust weighting.",
                         "priority": "low",
-                        "technical_fix": f"Embed Schema.org Author Person markup with jobTitle and honorificSuffix in {url}.",
-                        "creative_fix": f"Display an author byline box on {url} with bio, credentials, and published/updated dates.",
-                        "verification": f"Verify author byline on {url} is visible and represented in JSON-LD.",
-                        "suggested_action": {
-                            "summary": rec_summary,
-                            "priority": "low",
-                            "technical_fix": f"Embed Schema.org Author Person markup with jobTitle and honorificSuffix in {url}.",
-                            "creative_fix": f"Display an author byline box on {url} with bio, credentials, and published/updated dates.",
-                            "verification": f"Verify author byline on {url} is visible and represented in JSON-LD.",
-                        },
+                        "technical_fix": "Embed Schema.org Author Person markup with jobTitle and honorificSuffix.",
+                        "creative_fix": "Display an author byline box with bio, credentials, and published/updated dates.",
+                        "verification": "Verify author byline is visible and represented in JSON-LD.",
                     }
                 )
 
         # 5. AutoGEO Vector: Direct Answer Lead & Question Headings
         has_questions = any(QUESTION_RE.search(h) for h in parser.headings)
         if ptype == "article" and not has_questions and total_words > 150:
-            rec_summary = f"Article {url} lacks question-oriented headings (H2/H3). Question headings match conversational user search intent."
             recommendations.append(
                 {
                     "id": "PROACTIVE.GEO.QUESTION_HEADINGS.001",
-                    "title": f"Incorporate Direct Question Headings on {url}",
+                    "title": "Incorporate Direct Question Headings (FAQ / Q&A formatting)",
                     "category": "content",
-                    "summary": rec_summary,
+                    "summary": f"Article {url} lacks question-oriented headings (H2/H3). Question headings match conversational user search intent.",
                     "priority": "low",
-                    "technical_fix": f"Structure key sections on {url} under <h2>What is...</h2> and <h2>How does...</h2> headings.",
-                    "creative_fix": f"Place concise 40-60 word direct answers immediately below question headings on {url}.",
-                    "verification": f"Verify question headings and direct answer leads are present in {url} markup.",
-                    "suggested_action": {
-                        "summary": rec_summary,
-                        "priority": "low",
-                        "technical_fix": f"Structure key sections on {url} under <h2>What is...</h2> and <h2>How does...</h2> headings.",
-                        "creative_fix": f"Place concise 40-60 word direct answers immediately below question headings on {url}.",
-                        "verification": f"Verify question headings and direct answer leads are present in {url} markup.",
-                    },
+                    "technical_fix": "Structure key sections under <h2>What is...</h2> and <h2>How does...</h2> headings.",
+                    "creative_fix": "Place concise 40-60 word direct answers immediately below question headings.",
+                    "verification": "Verify question headings and direct answer leads are present in markup.",
                 }
             )
 
         # 6. Structured Content Vector: Tables and Lists
         if ptype == "product_detail" and parser.tables == 0 and parser.lists == 0:
-            rec_summary = f"Product page {url} contains no semantic tables or lists. Structuring specifications in <table> or <dl> accelerates LLM fact extraction."
             recommendations.append(
                 {
                     "id": "PROACTIVE.GEO.STRUCTURED_TABLES.001",
-                    "title": f"Structure product specifications in semantic tables or lists on {url}",
+                    "title": "Structure product specifications in semantic tables or lists",
                     "category": "content",
-                    "summary": rec_summary,
+                    "summary": f"Product page {url} contains no semantic tables or lists. Structuring specifications in <table> or <dl> accelerates LLM fact extraction.",
                     "priority": "low",
-                    "technical_fix": f"Replace comma-separated feature text on {url} with semantic <table> and <ul> elements.",
-                    "creative_fix": f"Format comparison attributes on {url} into scannable feature rows.",
-                    "verification": f"Confirm <table> or <dl> elements are rendered in HTML source of {url}.",
-                    "suggested_action": {
-                        "summary": rec_summary,
-                        "priority": "low",
-                        "technical_fix": f"Replace comma-separated feature text on {url} with semantic <table> and <ul> elements.",
-                        "creative_fix": f"Format comparison attributes on {url} into scannable feature rows.",
-                        "verification": f"Confirm <table> or <dl> elements are rendered in HTML source of {url}.",
-                    },
+                    "technical_fix": "Replace comma-separated feature text with semantic <table> and <ul> elements.",
+                    "creative_fix": "Format comparison attributes into scannable feature rows.",
+                    "verification": "Confirm <table> or <dl> elements are rendered in the HTML source.",
                 }
             )
 
@@ -406,24 +359,16 @@ def audit(base, domain, inv=None, state_file=None):
             entropy = compute_passage_entropy(full_text)
             comp_ratio = compute_compression_ratio(full_text)
             if entropy < 4.0:
-                rec_summary = f"Page {url} has low lexical token entropy ({entropy:.2f} bits/token, comp ratio {comp_ratio:.2f}). Increasing vocabulary specificity and technical depth improves neural retrieval ranking."
                 recommendations.append(
                     {
                         "id": "PROACTIVE.GEO.INFORMATION_DENSITY.001",
-                        "title": f"Increase factual vocabulary diversity and information density on {url}",
+                        "title": "Increase factual vocabulary diversity and information density",
                         "category": "content",
-                        "summary": rec_summary,
+                        "summary": f"Page {url} has low lexical token entropy ({entropy:.2f} bits/token, comp ratio {comp_ratio:.2f}). Increasing vocabulary specificity and technical depth improves neural retrieval ranking.",
                         "priority": "low",
-                        "technical_fix": f"Add technical terminology, specific feature nouns, and precise specifications to copy on {url}.",
-                        "creative_fix": f"Replace generic marketing phrasing on {url} with distinct, domain-specific terminology.",
-                        "verification": f"Confirm passage token entropy on {url} >= 4.2 bits/token.",
-                        "suggested_action": {
-                            "summary": rec_summary,
-                            "priority": "low",
-                            "technical_fix": f"Add technical terminology, specific feature nouns, and precise specifications to copy on {url}.",
-                            "creative_fix": f"Replace generic marketing phrasing on {url} with distinct, domain-specific terminology.",
-                            "verification": f"Confirm passage token entropy on {url} >= 4.2 bits/token.",
-                        },
+                        "technical_fix": "Add technical terminology, specific feature nouns, and precise specifications.",
+                        "creative_fix": "Replace generic marketing phrasing with distinct, domain-specific terminology.",
+                        "verification": "Confirm passage token entropy >= 4.2 bits/token.",
                     }
                 )
 

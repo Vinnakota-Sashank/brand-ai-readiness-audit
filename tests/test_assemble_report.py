@@ -2,6 +2,7 @@
 import unittest
 import json
 from pathlib import Path
+# pyrefly: ignore [missing-import]
 from assemble_report import assemble, verify_evidence, sort_tasks, plan, validate_report
 
 ROOT = Path(__file__).resolve().parents[1]
