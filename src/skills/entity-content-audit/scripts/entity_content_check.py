@@ -402,6 +402,8 @@ def audit(base, domain, inv=None, state_file=None):
                     "cause_family": "ENTITY.IDENTITY",
                     "id": "MATERIAL_ENTITY_AMBIGUITY",
                     "cause_id": "MATERIAL_ENTITY_AMBIGUITY",
+                    "check_id": "E2",
+                    "related_check_ids": ["E2", "BC6"],
                     "impact": "AI models cannot resolve the brand entity with high confidence, leading to entity collisions and ungrounded answers.",
                     "evidence": f"No JSON-LD Organization block or og:site_name found on {base}/.",
                     "suggested_action": {
@@ -469,6 +471,8 @@ def audit(base, domain, inv=None, state_file=None):
                                 "cause_family": "ENTITY.ATTRIBUTE_INCOMPLETENESS",
                                 "id": "ATTRIBUTE_INCOMPLETENESS",
                                 "cause_id": "ATTRIBUTE_INCOMPLETENESS",
+                                "check_id": "E3",
+                                "related_check_ids": ["E3"],
                                 "impact": "AI assistants (e.g. ChatGPT Search, Perplexity Shopping) may refuse to recommend the product due to missing pricing or stock status.",
                                 "evidence": f"Product JSON-LD on {purl} lacks: {', '.join(missing)}. Current score: {res['score']}/1.0.",
                                 "suggested_action": {
@@ -507,6 +511,41 @@ def audit(base, domain, inv=None, state_file=None):
             json.dump(state, f)
         os.replace(tmp, state_file)
 
+    # 4. Conversational Voice Search & Hierarchy Structure Analysis
+    has_speakable = False
+    has_breadcrumbs = False
+    for e in json_ld_entities:
+        if "speakable" in e or matches_schema_type(e, ("speakablespecification",)):
+            has_speakable = True
+        if matches_schema_type(e, ("breadcrumblist",)):
+            has_breadcrumbs = True
+
+    if not has_speakable:
+        observations.append(
+            {
+                "observation": "No Schema.org 'speakable' specification found for voice/conversational search.",
+                "impact": "Voice AI assistants (Google Assistant, Siri, ChatGPT Voice) benefit from 'speakable' markup indicating key headings and summary sentences for audio readout.",
+                "role": "conversational_readiness",
+                "check_id": "E4",
+            }
+        )
+
+    if not has_breadcrumbs and len(html_pages) > 1:
+        recommendations.append(
+            {
+                "title": "Add BreadcrumbList JSON-LD schema",
+                "category": "navigation-structure",
+                "rationale": "BreadcrumbList structured data helps AI agents parse site hierarchy and entity taxonomy.",
+                "suggested_action": {
+                    "summary": f"Implement Schema.org BreadcrumbList JSON-LD across content templates on {base}.",
+                    "technical_fix": "Add BreadcrumbList structured data to child pages reflecting the URL hierarchy.",
+                    "creative_fix": "Ensure visible breadcrumb navigation is present near the top of category and product pages.",
+                    "priority": "low",
+                    "verification": "Inspect structured data using Google Rich Results Test to confirm BreadcrumbList parses without errors.",
+                },
+            }
+        )
+
     return {
         "status": "ok",
         "findings": findings,
@@ -522,6 +561,8 @@ def audit(base, domain, inv=None, state_file=None):
             "html_pages_evaluated": len(html_pages),
             "answerability_evaluations": answerability_evaluations,
             "json_ld_count": len(json_ld_entities),
+            "has_speakable": has_speakable,
+            "has_breadcrumbs": has_breadcrumbs,
         },
         "limitations": [
             "Entity and answerability analysis was performed on sampled first-party HTML; authenticated portals were not evaluated."

@@ -15,120 +15,141 @@ DEFAULT_CATEGORY = {
     "engagement-context-audit": "engagement",
 }
 
-# ── 10-Category GEO Scoring Taxonomy (Adobe / Glippy aligned) ──
-# Maps each check_id prefix or exact ID to one of the 10 GEO categories.
-GEO_CATEGORY_MAP = {
-    # 1. Structured Data & Schema
-    "structured_data_schema": {
-        "name": "Structured Data & Schema",
-        "check_ids": ["E1", "E2", "E3", "E4", "E5", "E6", "E7", "N11",
-                       "EC6", "SA6", "PP5", "BN4", "ED6", "ME4", "BC6"],
-        "weight": 1.2,
-        "description": "JSON-LD presence, Schema.org validity, type coverage, and markup correctness",
-    },
-    # 2. Semantic HTML
-    "semantic_html": {
-        "name": "Semantic HTML",
-        "check_ids": ["H2", "J1", "BN8", "SA8", "SC6", "ED8", "ME7"],
-        "weight": 0.9,
-        "description": "Heading hierarchy, semantic elements, content-to-markup ratio",
-    },
-    # 3. Accessibility for Agents
-    "accessibility_agents": {
-        "name": "Accessibility for Agents",
-        "check_ids": ["F1", "F2", "F3", "F4", "F5"],
-        "weight": 0.8,
-        "description": "Alt text, lang attributes, ARIA landmarks, descriptive link text",
-    },
-    # 4. Internal Linking
-    "internal_linking": {
-        "name": "Internal Linking",
-        "check_ids": ["D2", "J2", "B4"],
-        "weight": 0.8,
-        "description": "Sitemap coverage, navigation structure, breadcrumbs, orphan pages",
-    },
-    # 5. Meta & Discoverability
-    "meta_discoverability": {
-        "name": "Meta & Discoverability",
-        "check_ids": ["A1", "A2", "A3", "A4", "A5", "B1", "B2", "B3", "B5"],
+# ── Native 6 Specialist Domains + Agent Interactivity ──
+# Aligned 1-to-1 with our 6 specialist skills + orchestrator protocols (134 total checks)
+DOMAIN_TAXONOMY = {
+    # 1. Discoverability & Crawlability (discoverability-audit)
+    "discoverability": {
+        "name": "Discoverability & Crawlability",
+        "skill": "discoverability-audit",
+        "check_ids": [
+            "A1", "A2", "A3", "A4", "A5",
+            "B1", "B2", "B3", "B4", "B5",
+            "C1", "C2", "C3", "C4", "C5",
+            "H1", "H2", "H3",
+            "I1", "I2",
+            "J9", "J10",
+        ],
         "weight": 1.3,
-        "description": "Robots.txt, canonical URLs, meta robots, redirects, crawler access",
+        "description": "Robots.txt access, crawler directives, static HTML ingestion rate, and hydration parity",
     },
-    # 6. Machine Readability
-    "machine_readability": {
-        "name": "Machine Readability",
-        "check_ids": ["C1", "C2", "C3", "C4", "C5"],
-        "weight": 1.5,
-        "description": "Raw vs. rendered content gap, SSR detection, JS dependency, citation readability",
+    # 2. Entity Identity & Answerability (entity-content-audit)
+    "entity_content": {
+        "name": "Entity Identity & Content Answerability",
+        "skill": "entity-content-audit",
+        "check_ids": [
+            "E1", "E2", "E3", "E4", "E5", "E6", "E7",
+            "BC1", "BC2", "BC3", "BC4", "BC5", "BC6", "BC7", "BC8",
+        ],
+        "weight": 1.2,
+        "description": "Schema.org structured data, Organization identity, Product/Offer answerability, and speakable specifications",
     },
-    # 7. Entity & Authority
-    "entity_authority": {
-        "name": "Entity & Authority",
-        "check_ids": ["BC1", "BC2", "BC3", "BC4", "BC5", "BC7", "BC8",
-                       "N15", "PP7", "SA2", "PROFILE_DATA_MISMATCH",
-                       "UNDECLARED_PROFILE_FOUND", "SC5"],
+    # 3. Fact Consistency & Grounding (fact-consistency-audit)
+    "fact_consistency": {
+        "name": "Fact Consistency & Grounding",
+        "skill": "fact-consistency-audit",
+        "check_ids": [
+            "F1", "F2", "F3", "F4", "F5",
+            "PP1", "PP2", "PP3", "PP4", "PP5", "PP6", "PP7",
+            "PROFILE_DATA_MISMATCH", "UNDECLARED_PROFILE_FOUND",
+            "STALE_THIRD_PARTY_PROFILE", "MISSING_EXPECTED_PROFILE",
+        ],
         "weight": 1.0,
-        "description": "Organization identity, brand consistency, author credentials, authority signals",
+        "description": "Cross-surface claim consistency, pricing parity, and profile truth alignment across channels",
     },
-    # 8. Citability & Answer-Readiness
-    "citability_answer_readiness": {
-        "name": "Citability & Answer-Readiness",
-        "check_ids": ["N1", "N2", "N3", "N4", "N5", "N6", "N7", "N8",
-                       "N9", "N10", "N12", "N13", "N14",
-                       "EC5", "PP1", "PP3", "BN1", "BN3", "BN5", "BN6",
-                       "BN7", "SC4", "ED1", "ED4", "ME6",
-                       "SA1", "SA3", "SA4"],
-        "weight": 1.1,
-        "description": "Self-contained answers, FAQ coverage, content depth, causal explanations, fluency",
+    # 4. Corroboration & Authority (corroboration-authority-audit)
+    "corroboration_authority": {
+        "name": "Corroboration & Authority Signals",
+        "skill": "corroboration-authority-audit",
+        "check_ids": [
+            "SA1", "SA2", "SA3", "SA4", "SA5", "SA6", "SA7", "SA8", "SA9",
+            "SC1", "SC2", "SC3", "SC4", "SC5", "SC6", "SC7",
+        ],
+        "weight": 1.0,
+        "description": "Independent third-party validation, citation ecosystem presence, and sentiment corroboration",
     },
-    # 9. Performance & Crawlability
-    "performance_crawlability": {
-        "name": "Performance & Crawlability",
-        "check_ids": ["H1", "H3", "I1", "I2", "J9", "J10"],
-        "weight": 0.7,
-        "description": "Page latency, DOM size, render-blocking scripts, deep link stability",
+    # 5. GEO Citability & Synthesis (geo-content-audit)
+    "geo_citability": {
+        "name": "GEO Citability & Synthesis Readiness",
+        "skill": "geo-content-audit",
+        "check_ids": [
+            "N1", "N2", "N3", "N4", "N5", "N6", "N7", "N8", "N9", "N10",
+            "N11", "N12", "N13", "N14", "N15",
+            "BN1", "BN2", "BN3", "BN4", "BN5", "BN6", "BN7", "BN8", "BN9",
+            "ED1", "ED2", "ED3", "ED4", "ED5", "ED6", "ED7", "ED8", "ED9",
+            "ME1", "ME2", "ME3", "ME4", "ME5", "ME6", "ME7", "ME8",
+        ],
+        "weight": 1.2,
+        "description": "Direct answer density, factual self-containment, statistical backing, and quotable chunk boundaries",
     },
-    # 10. Agent Interactivity
+    # 6. Engagement & Context Continuity (engagement-context-audit)
+    "engagement_context": {
+        "name": "Engagement & Search Journey Context",
+        "skill": "engagement-context-audit",
+        "check_ids": [
+            "EC1", "EC2", "EC3", "EC4", "EC5", "EC6", "EC7", "EC8", "EC9",
+            "D1", "D2", "D3", "D4", "D5",
+        ],
+        "weight": 0.8,
+        "description": "User intent fulfillment, navigation clarity, and search-to-conversion continuity",
+    },
+    # 7. Agent Interactivity & Protocols (orchestrator proactive declarations)
     "agent_interactivity": {
-        "name": "Agent Interactivity",
-        "check_ids": ["G1", "G2"],
-        "weight": 0.7,
-        "description": "llms.txt manifest, WebMCP compliance, declarative API endpoints",
+        "name": "Agent Interactivity & Protocol Declarations",
+        "skill": "audit-orchestrator",
+        "check_ids": [
+            "G1", "G2",
+            "J1", "J2", "J3", "J4", "J5", "J6", "J7", "J8",
+        ],
+        "weight": 0.8,
+        "description": "llms.txt manifest availability, WebMCP compliant endpoints, and programmatic agent discovery",
     },
 }
 
+GEO_CATEGORY_MAP = DOMAIN_TAXONOMY  # Backward compatibility
 
-def compute_geo_scores(findings, coverage_data=None):
-    """Compute per-category GEO scores (0-100) and overall grade.
+READINESS_TIERS = [
+    (90, "Tier 1: Elite Citability", "Authoritative knowledge source with pre-rendered facts and machine-explicit identity; primed for top-rank AI search citations."),
+    (75, "Tier 2: Strong Grounding", "High citability with minor schema or answerability gaps; reliably indexed for search retrieval."),
+    (60, "Tier 3: Selective Ingestion", "Partially visible to AI bots; hydration delays or entity ambiguities reduce extraction confidence."),
+    (40, "Tier 4: High Hallucination Risk", "Substantial blind spots; missing core schema, heavy client hydration, or crawler friction cause inconsistent AI representations."),
+    (0, "Tier 5: AI-Invisible / High Friction", "Severe crawl blocks, complete client-rendering dependency, or ungrounded entity profiles render site invisible to AI agents."),
+]
+
+
+def compute_domain_scores(findings, coverage_data=None):
+    """Compute per-domain Brand AI-Readiness scores (0-100), composite index, grade, and tier.
 
     Scoring logic:
-    - Start at 100 for each category.
+    - Start at 100 for each of the 6 specialist domains (+ agent interactivity).
     - Deduct points based on finding severity:
       critical=-40, high=-25, medium=-15, low=-5
-    - Bonus for coverage: +10 if category checks were explicitly observed.
-    - Citation readability directly affects Machine Readability score.
+    - Deductions apply to the domain corresponding to the finding's related_check_ids.
+    - Static Ingestion Rate penalty: If static HTML ingestion rate is low (<90%),
+      apply a direct penalty to the Discoverability domain.
     """
     SEVERITY_DEDUCTION = {"critical": 40, "high": 25, "medium": 15, "low": 5}
     GRADE_THRESHOLDS = [
         (90, "A"), (80, "B"), (70, "C"), (60, "D"), (50, "E"), (0, "F")
     ]
 
-    # Build reverse map: check_id -> category_key
-    check_to_category = {}
-    for cat_key, cat_info in GEO_CATEGORY_MAP.items():
-        for cid in cat_info["check_ids"]:
-            check_to_category[cid] = cat_key
+    # Build reverse map: check_id -> domain_key
+    check_to_domain = {}
+    for dom_key, dom_info in DOMAIN_TAXONOMY.items():
+        for cid in dom_info["check_ids"]:
+            check_to_domain[cid] = dom_key
 
-    # Initialize scores
+    # Initialize domain scores
     scores = {}
-    for cat_key, cat_info in GEO_CATEGORY_MAP.items():
-        scores[cat_key] = {
-            "name": cat_info["name"],
+    for dom_key, dom_info in DOMAIN_TAXONOMY.items():
+        scores[dom_key] = {
+            "name": dom_info["name"],
+            "skill": dom_info["skill"],
             "score": 100,
             "grade": "A",
             "finding_count": 0,
             "deductions": [],
-            "weight": cat_info["weight"],
+            "weight": dom_info["weight"],
         }
 
     # Apply deductions from findings
@@ -136,74 +157,102 @@ def compute_geo_scores(findings, coverage_data=None):
         related_ids = f.get("related_check_ids", [])
         severity = f.get("severity", "low")
         deduction = SEVERITY_DEDUCTION.get(severity, 5)
-        matched_categories = set()
+        matched_domains = set()
 
         for cid in related_ids:
-            cat_key = check_to_category.get(cid)
-            if cat_key and cat_key not in matched_categories:
-                matched_categories.add(cat_key)
-                scores[cat_key]["score"] = max(0, scores[cat_key]["score"] - deduction)
-                scores[cat_key]["finding_count"] += 1
-                scores[cat_key]["deductions"].append(
+            dom_key = check_to_domain.get(cid)
+            if dom_key and dom_key not in matched_domains:
+                matched_domains.add(dom_key)
+                scores[dom_key]["score"] = max(0, scores[dom_key]["score"] - deduction)
+                scores[dom_key]["finding_count"] += 1
+                scores[dom_key]["deductions"].append(
                     f"-{deduction} ({severity}: {f.get('title', cid)[:60]})"
                 )
 
-        # If no category matched, try to match by finding ID pattern
-        if not matched_categories:
+        # Fallback by finding ID / category if no check_id matched
+        if not matched_domains:
             fid = f.get("id", "")
-            if "CITATION_READABILITY" in fid:
-                cat_key = "machine_readability"
-                scores[cat_key]["score"] = max(0, scores[cat_key]["score"] - deduction)
-                scores[cat_key]["finding_count"] += 1
-                scores[cat_key]["deductions"].append(
-                    f"-{deduction} ({severity}: {f.get('title', fid)[:60]})"
-                )
+            fcat = f.get("category", "")
+            if "STATIC_HTML" in fid or "CITATION_READABILITY" in fid or fcat == "rendering":
+                dom_key = "discoverability"
+            elif "ENTITY" in fid or fcat in ("entity-identity", "product-answerability"):
+                dom_key = "entity_content"
+            elif fcat == "crawlability":
+                dom_key = "discoverability"
+            else:
+                dom_key = "discoverability"
+            scores[dom_key]["score"] = max(0, scores[dom_key]["score"] - deduction)
+            scores[dom_key]["finding_count"] += 1
+            scores[dom_key]["deductions"].append(
+                f"-{deduction} ({severity}: {f.get('title', fid)[:60]})"
+            )
 
-    # Apply citation readability directly to Machine Readability score
+    # Apply static HTML ingestion rate directly to Discoverability domain
     if coverage_data:
-        cit_pct = coverage_data.get("citation_readability_pct")
-        if cit_pct is not None:
-            # Scale: 100% readability = no extra deduction, 0% = full penalty
-            cr_penalty = max(0, int((100 - cit_pct) * 0.5))
-            if cr_penalty > 0:
-                scores["machine_readability"]["score"] = max(
-                    0, scores["machine_readability"]["score"] - cr_penalty
+        static_rate = coverage_data.get("static_ingestion_rate_pct")
+        if static_rate is None:
+            static_rate = coverage_data.get("citation_readability_pct")
+        if static_rate is not None and static_rate < 90:
+            deficit_penalty = max(0, int((100 - static_rate) * 0.4))
+            if deficit_penalty > 0:
+                scores["discoverability"]["score"] = max(
+                    0, scores["discoverability"]["score"] - deficit_penalty
                 )
-                scores["machine_readability"]["deductions"].append(
-                    f"-{cr_penalty} (citation readability: {cit_pct}%)"
+                scores["discoverability"]["deductions"].append(
+                    f"-{deficit_penalty} (static ingestion rate: {static_rate}%)"
                 )
 
-    # Compute grades
-    for cat_key in scores:
-        score = scores[cat_key]["score"]
+    # Compute grades for each domain
+    for dom_key in scores:
+        score = scores[dom_key]["score"]
         for threshold, grade in GRADE_THRESHOLDS:
             if score >= threshold:
-                scores[cat_key]["grade"] = grade
+                scores[dom_key]["grade"] = grade
                 break
 
-    # Compute weighted overall score
+    # Compute composite Brand AI-Readiness Index (0-100)
     total_weight = sum(s["weight"] for s in scores.values())
     weighted_sum = sum(s["score"] * s["weight"] for s in scores.values())
     overall_score = round(weighted_sum / total_weight) if total_weight > 0 else 0
+
     overall_grade = "F"
     for threshold, grade in GRADE_THRESHOLDS:
         if overall_score >= threshold:
             overall_grade = grade
             break
 
-    return {
-        "overall_score": overall_score,
-        "overall_grade": overall_grade,
-        "categories": {
-            k: {
-                "name": v["name"],
-                "score": v["score"],
-                "grade": v["grade"],
-                "finding_count": v["finding_count"],
-            }
-            for k, v in scores.items()
-        },
+    readiness_tier = "Tier 5: AI-Invisible / High Friction"
+    tier_desc = ""
+    for threshold, tier_name, desc in READINESS_TIERS:
+        if overall_score >= threshold:
+            readiness_tier = tier_name
+            tier_desc = desc
+            break
+
+    domain_output = {
+        k: {
+            "name": v["name"],
+            "skill": v["skill"],
+            "score": v["score"],
+            "grade": v["grade"],
+            "finding_count": v["finding_count"],
+        }
+        for k, v in scores.items()
     }
+
+    result = {
+        "brand_readiness_index": overall_score,
+        "overall_score": overall_score,  # backward compatibility
+        "overall_grade": overall_grade,
+        "readiness_tier": readiness_tier,
+        "tier_description": tier_desc,
+        "domains": domain_output,
+        "categories": domain_output,  # backward compatibility
+    }
+    return result
+
+
+compute_geo_scores = compute_domain_scores  # Backward compatibility alias
 
 
 
@@ -489,24 +538,58 @@ def assemble(site, candidates, records, checks, coverage=None, browser=None,
         "low": sum(1 for f in schema_findings if f["severity"] == "low"),
     }
 
-    # Add Citation Readability metrics to summary (Adobe-competitive)
+    # Add Static Ingestion Rate & Hydration Deficit metrics
     if discoverability_coverage:
-        cit_pct = discoverability_coverage.get("citation_readability_pct")
-        if cit_pct is not None:
-            summary["citation_readability_pct"] = cit_pct
-            summary["citation_readability_missing_words"] = discoverability_coverage.get("missing_words", 0)
-            summary["visible_words_initial_html"] = discoverability_coverage.get("visible_words_initial_html", 0)
-            summary["visible_words_rendered"] = discoverability_coverage.get("visible_words_rendered", 0)
+        static_rate = discoverability_coverage.get("static_ingestion_rate_pct")
+        if static_rate is None:
+            static_rate = discoverability_coverage.get("citation_readability_pct")
+        deficit_words = discoverability_coverage.get("hydration_deficit_words")
+        if deficit_words is None:
+            deficit_words = discoverability_coverage.get("missing_words", 0)
 
-    # Compute GEO Category Scores
-    geo_scores = compute_geo_scores(schema_findings, discoverability_coverage)
+        summary["static_ingestion_rate_pct"] = static_rate
+        summary["hydration_deficit_words"] = deficit_words
+        # Backward-compatible aliases
+        summary["citation_readability_pct"] = static_rate
+        summary["citation_readability_missing_words"] = deficit_words
+        summary["visible_words_initial_html"] = discoverability_coverage.get("visible_words_initial_html", 0)
+        summary["visible_words_rendered"] = discoverability_coverage.get("visible_words_rendered", 0)
+
+    # Compute Domain & GEO Scores
+    domain_scores = compute_domain_scores(schema_findings, discoverability_coverage)
+    summary["brand_readiness_index"] = domain_scores["brand_readiness_index"]
+    summary["readiness_tier"] = domain_scores["readiness_tier"]
+
+    # Generate proactive recommendations (e.g. autonomous /llms.txt manifest)
+    proactive_actions = []
+    llms_missing = any("llms.txt" in str(obs) for obs in observations) or not any(
+        "/llms.txt" in str(r.get("url", "")) for r in records
+    )
+    if llms_missing:
+        from urllib.parse import urlparse
+        domain_name = urlparse(site).netloc or site.replace("https://", "").replace("http://", "").split("/")[0]
+        brand_title = domain_name.split(".")[0].capitalize()
+        proactive_actions.append(
+            {
+                "id": "PROACTIVE_LLMS_TXT_MANIFEST",
+                "title": f"Autonomous /llms.txt manifest for {brand_title}",
+                "category": "agent_interactivity",
+                "summary": f"Generate and deploy an /llms.txt AI search manifest on {site}/llms.txt to provide zero-friction grounding for AI research agents.",
+                "technical_fix": f"Deploy a Markdown file at {site}/llms.txt following the llmstxt.org specification, linking primary documentation, product catalogue, and canonical brand facts.",
+                "creative_fix": f"Curate executive summaries of {brand_title}'s core differentiators, key service offerings, and authoritative contact endpoints within the manifest.",
+                "priority": "medium",
+                "verification": f"Fetch {site}/llms.txt with curl -sI and verify HTTP 200 response with Content-Type: text/markdown.",
+            }
+        )
 
     report = {
         "site": site,
         "audited_at": now(),
         "audit_status": "complete",
         "summary": summary,
-        "geo_scores": geo_scores,
+        "domain_scores": domain_scores,
+        "geo_scores": domain_scores,  # backward compatibility alias
+        "proactive_actions": proactive_actions,
         "findings": schema_findings,
         "observations": observations,
         "dropped_findings": dropped,

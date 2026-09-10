@@ -55,6 +55,18 @@
           "type": "integer",
           "minimum": 0
         },
+        "static_ingestion_rate_pct": {
+          "type": ["number", "null"]
+        },
+        "hydration_deficit_words": {
+          "type": ["integer", "null"]
+        },
+        "brand_readiness_index": {
+          "type": ["number", "integer", "null"]
+        },
+        "readiness_tier": {
+          "type": ["string", "null"]
+        },
         "citation_readability_pct": {
           "type": ["number", "null"]
         },
@@ -298,6 +310,9 @@
       }
     },
     "geo_scores": {
+      "type": "object"
+    },
+    "domain_scores": {
       "type": "object"
     }
   },
