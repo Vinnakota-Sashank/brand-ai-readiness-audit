@@ -54,6 +54,18 @@
         "low": {
           "type": "integer",
           "minimum": 0
+        },
+        "citation_readability_pct": {
+          "type": ["number", "null"]
+        },
+        "citation_readability_missing_words": {
+          "type": ["integer", "null"]
+        },
+        "visible_words_initial_html": {
+          "type": ["integer", "null"]
+        },
+        "visible_words_rendered": {
+          "type": ["integer", "null"]
         }
       },
       "additionalProperties": false
@@ -284,6 +296,9 @@
       "items": {
         "type": "string"
       }
+    },
+    "geo_scores": {
+      "type": "object"
     }
   },
   "additionalProperties": false
