@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
-root="$(cd "$(dirname "$0")/.." && pwd)"
-cd "$root"
-python tests/validate_package.py
-rm -f brand-ai-readiness-audit.zip
-zip -r brand-ai-readiness-audit.zip . -x '.git/*' '__pycache__/*' '*.pyc' '.pytest_cache/*' '.mypy_cache/*' '.ruff_cache/*' 'src/*' 'brand-ai-readiness-audit.zip'
+script_dir="$(cd "$(dirname "$0")" && pwd)"
+PYTHON_CMD="python3"
+if ! command -v python3 >/dev/null 2>&1; then
+    PYTHON_CMD="python"
+fi
+exec "$PYTHON_CMD" "$script_dir/build.py" "$@"
+
