@@ -5,7 +5,7 @@ import unittest
 
 class TestSchemaEdgeCases(unittest.TestCase):
     def setUp(self):
-        self.val_script = "skills/audit-orchestrator/scripts/validate_report.py"
+        self.val_script = "src/skills/audit-orchestrator/scripts/validate_report.py"
 
     def test_reject_extra_root_properties(self):
         # additionalProperties: false at root level

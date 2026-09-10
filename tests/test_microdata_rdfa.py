@@ -2,7 +2,7 @@ import os
 import sys
 import unittest
 
-SCRIPT_DIR = os.path.join(os.path.dirname(__file__), "..", "skills", "entity-content-audit", "scripts")
+SCRIPT_DIR = os.path.join(os.path.dirname(__file__), "..", "src", "skills", "entity-content-audit", "scripts")
 if SCRIPT_DIR not in sys.path:
     sys.path.insert(0, SCRIPT_DIR)
 

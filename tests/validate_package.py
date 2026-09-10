@@ -4,13 +4,15 @@ from pathlib import Path
 import re
 
 root=Path(__file__).resolve().parents[1]
-manifest=json.loads((root/'marketplace.json').read_text(encoding='utf-8'))
+src=root/'src'
+manifest=json.loads((src/'marketplace.json').read_text(encoding='utf-8'))
 assert sum(s.get('entrypoint') is True for s in manifest['skills'])==1
 assert len({s['id'] for s in manifest['skills']})==len(manifest['skills'])
-assert {s['path'] for s in manifest['skills']}=={str(p.relative_to(root)).replace('\\','/') for p in (root/'skills').iterdir() if p.is_dir()}
+assert {s['path'] for s in manifest['skills']}=={str(p.relative_to(src)).replace('\\','/') for p in (src/'skills').iterdir() if p.is_dir()}
 for skill in manifest['skills']:
-    directory=(root/skill['path']).resolve()
-    assert directory.is_relative_to(root)
+    directory=(src/skill['path']).resolve()
+    assert directory.is_relative_to(src)
+
     text=(directory/'SKILL.md').read_text(encoding='utf-8')
     assert text.startswith('---\n')
     frontmatter=text.split('---',2)[1]
@@ -40,7 +42,7 @@ for skill in manifest['skills']:
     for target in re.findall(r'\]\(([^)]+)\)',text):
         if '://' not in target:
             assert (directory/target).exists(),(skill['id'],target)
-checks=json.loads((root/'skills/audit-orchestrator/references/checks.json').read_text(encoding='utf-8'))
+checks=json.loads((src/'skills/audit-orchestrator/references/checks.json').read_text(encoding='utf-8'))
 assert len(checks)==len({c['check_id'] for c in checks})==134
 valid_skill_ids = {s['id'] for s in manifest['skills']}
 for c in checks:

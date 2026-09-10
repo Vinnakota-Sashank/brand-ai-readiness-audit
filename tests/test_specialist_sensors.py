@@ -6,7 +6,7 @@ import tempfile
 import unittest
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-SKILLS_DIR = os.path.join(PROJECT_ROOT, "skills")
+SKILLS_DIR = os.path.join(PROJECT_ROOT, "src", "skills")
 
 
 class TestSpecialistSensors(unittest.TestCase):

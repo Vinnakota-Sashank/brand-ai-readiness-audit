@@ -7,7 +7,7 @@ import unittest
 
 class TestGeoContentAudit(unittest.TestCase):
     def setUp(self):
-        self.script_path = "skills/geo-content-audit/scripts/geo_content_check.py"
+        self.script_path = "src/skills/geo-content-audit/scripts/geo_content_check.py"
         self.test_inv = os.path.join(tempfile.gettempdir(), "test_geo_inv.json")
         self.test_state = os.path.join(tempfile.gettempdir(), "test_geo_state.json")
 

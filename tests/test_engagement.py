@@ -2,7 +2,7 @@ import os
 import sys
 import unittest
 
-script_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../skills/engagement-context-audit/scripts"))
+script_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../src/skills/engagement-context-audit/scripts"))
 sys.path.insert(0, script_dir)
 
 import engagement_check

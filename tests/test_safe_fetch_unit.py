@@ -1,7 +1,7 @@
 import sys
 import unittest
 
-sys.path.insert(0, "skills/audit-orchestrator/scripts")
+sys.path.insert(0, "src/skills/audit-orchestrator/scripts")
 import safe_fetch
 
 

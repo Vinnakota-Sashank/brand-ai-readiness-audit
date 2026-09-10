@@ -1,7 +1,7 @@
 import sys
 import unittest
 
-sys.path.insert(0, "skills/fact-consistency-audit/scripts")
+sys.path.insert(0, "src/skills/fact-consistency-audit/scripts")
 import fact_consistency_check
 
 

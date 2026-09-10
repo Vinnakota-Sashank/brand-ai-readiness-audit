@@ -7,7 +7,7 @@ import unittest
 
 class TestEntityContentAudit(unittest.TestCase):
     def setUp(self):
-        self.script_path = "skills/entity-content-audit/scripts/entity_content_check.py"
+        self.script_path = "src/skills/entity-content-audit/scripts/entity_content_check.py"
         self.test_inv = os.path.join(tempfile.gettempdir(), "test_entity_inv.json")
         self.test_state = os.path.join(tempfile.gettempdir(), "test_entity_state.json")
 

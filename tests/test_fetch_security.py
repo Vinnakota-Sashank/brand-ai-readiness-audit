@@ -2,7 +2,7 @@ import os
 import sys
 import unittest
 
-script_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../skills/audit-orchestrator/scripts"))
+script_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../src/skills/audit-orchestrator/scripts"))
 sys.path.insert(0, script_dir)
 
 import safe_fetch

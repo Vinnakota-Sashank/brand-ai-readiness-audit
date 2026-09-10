@@ -1,16 +1,16 @@
 import sys
 import unittest
 
-sys.path.insert(0, "skills/discoverability-audit/scripts")
+sys.path.insert(0, "src/skills/discoverability-audit/scripts")
 import discoverability_check
 
-sys.path.insert(0, "skills/entity-content-audit/scripts")
+sys.path.insert(0, "src/skills/entity-content-audit/scripts")
 import entity_content_check
 
-sys.path.insert(0, "skills/fact-consistency-audit/scripts")
+sys.path.insert(0, "src/skills/fact-consistency-audit/scripts")
 import fact_consistency_check
 
-sys.path.insert(0, "skills/geo-content-audit/scripts")
+sys.path.insert(0, "src/skills/geo-content-audit/scripts")
 import geo_content_check
 
 

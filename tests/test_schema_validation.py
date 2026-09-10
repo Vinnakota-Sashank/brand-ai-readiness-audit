@@ -5,7 +5,7 @@ import unittest
 
 class TestSchemaValidationGate(unittest.TestCase):
     def setUp(self):
-        self.val_script = "skills/audit-orchestrator/scripts/validate_report.py"
+        self.val_script = "src/skills/audit-orchestrator/scripts/validate_report.py"
 
     def test_valid_report_passes(self):
         valid_report = {

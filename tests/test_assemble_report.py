@@ -6,7 +6,7 @@ from pathlib import Path
 from assemble_report import assemble, verify_evidence, sort_tasks, plan, validate_report
 
 ROOT = Path(__file__).resolve().parents[1]
-CHECKS = json.loads((ROOT / "skills/audit-orchestrator/references/checks.json").read_text(encoding="utf-8"))
+CHECKS = json.loads((ROOT / "src/skills/audit-orchestrator/references/checks.json").read_text(encoding="utf-8"))
 
 
 class TestAssembleReport(unittest.TestCase):

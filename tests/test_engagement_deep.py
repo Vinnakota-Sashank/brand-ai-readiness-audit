@@ -7,7 +7,7 @@ import unittest
 
 class TestEngagementDeep(unittest.TestCase):
     def setUp(self):
-        self.script = "skills/engagement-context-audit/scripts/engagement_check.py"
+        self.script = "src/skills/engagement-context-audit/scripts/engagement_check.py"
         self.test_inv = os.path.join(tempfile.gettempdir(), "test_eng_inv.json")
         self.test_state = os.path.join(tempfile.gettempdir(), "test_eng_state.json")
 

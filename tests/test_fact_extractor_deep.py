@@ -1,7 +1,7 @@
 import sys
 import unittest
 
-sys.path.insert(0, "skills/engagement-context-audit/scripts")
+sys.path.insert(0, "src/skills/engagement-context-audit/scripts")
 import fact_extractor
 
 

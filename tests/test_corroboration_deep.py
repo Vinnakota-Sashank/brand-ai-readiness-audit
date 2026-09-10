@@ -7,7 +7,7 @@ import unittest
 
 class TestCorroborationDeep(unittest.TestCase):
     def setUp(self):
-        self.script = "skills/corroboration-authority-audit/scripts/corroboration_check.py"
+        self.script = "src/skills/corroboration-authority-audit/scripts/corroboration_check.py"
         self.test_inv = os.path.join(tempfile.gettempdir(), "test_corrob_inv.json")
         self.test_state = os.path.join(tempfile.gettempdir(), "test_corrob_state.json")
 

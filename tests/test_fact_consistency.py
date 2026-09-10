@@ -7,7 +7,7 @@ import unittest
 
 class TestFactConsistencyAudit(unittest.TestCase):
     def setUp(self):
-        self.script_path = "skills/fact-consistency-audit/scripts/fact_consistency_check.py"
+        self.script_path = "src/skills/fact-consistency-audit/scripts/fact_consistency_check.py"
         self.test_inv = os.path.join(tempfile.gettempdir(), "test_fact_inv.json")
         self.test_state = os.path.join(tempfile.gettempdir(), "test_fact_state.json")
 
