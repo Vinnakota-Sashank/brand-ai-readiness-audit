@@ -6,6 +6,10 @@ Causal Root Causes:
   - DISCOVERY.ACCESS: AI_RETRIEVAL_BLOCKED, NOINDEX_EXCLUSION, WAF_BOT_CHALLENGE
   - DISCOVERY.DISCOVERY_PATH: CANONICAL_FRAGMENTATION, ORPHANED_CONTENT_PATH
   - DISCOVERY.REPRESENTATION_AVAILABILITY: RENDERED_CONTENT_GAP
+
+Adobe-competitive metrics:
+  - Citation Readability % = (initial HTML words / rendered words) * 100
+  - Missing Words = rendered words - initial HTML words
 """
 
 import argparse
@@ -487,6 +491,119 @@ def audit(base, domain, inv=None, state_file=None):
     visible_words = len(" ".join(dom.text).split())
     has_semantic_content = (dom.headings_count >= 1 and dom.paragraphs_count >= 1) or visible_words >= 15
 
+    # ── C1: Citation Readability Score (Headless Rendering Comparison) ──
+    # This is the key metric Adobe's AI Content Visibility Checker uses.
+    # Compares initial HTML word count vs. fully rendered word count.
+    rendered_words = None
+    citation_readability_pct = None
+    missing_words_count = None
+    rendering_error = None
+
+    try:
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as pw:
+            browser = pw.chromium.launch(headless=True)
+            context = browser.new_context(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+            )
+            page = context.new_page()
+            try:
+                page.goto(base + "/", wait_until="networkidle", timeout=30000)
+                page.wait_for_timeout(2000)  # Allow lazy content to load
+                # Extract visible text from the rendered page
+                rendered_text = page.evaluate("""
+                    () => {
+                        const main = document.querySelector('main') || document.body;
+                        const walker = document.createTreeWalker(
+                            main,
+                            NodeFilter.SHOW_TEXT,
+                            {
+                                acceptNode: (node) => {
+                                    const el = node.parentElement;
+                                    if (!el) return NodeFilter.FILTER_REJECT;
+                                    const tag = el.tagName.toLowerCase();
+                                    if (['script', 'style', 'noscript'].includes(tag)) return NodeFilter.FILTER_REJECT;
+                                    const style = window.getComputedStyle(el);
+                                    if (style.display === 'none' || style.visibility === 'hidden') return NodeFilter.FILTER_REJECT;
+                                    return NodeFilter.FILTER_ACCEPT;
+                                }
+                            }
+                        );
+                        const texts = [];
+                        while (walker.nextNode()) {
+                            const t = walker.currentNode.textContent.trim();
+                            if (t) texts.push(t);
+                        }
+                        return texts.join(' ');
+                    }
+                """)
+                rendered_words = len(rendered_text.split()) if rendered_text else 0
+            except Exception as e:
+                rendering_error = str(e)
+            finally:
+                context.close()
+                browser.close()
+    except ImportError:
+        rendering_error = "playwright not installed"
+    except Exception as e:
+        rendering_error = str(e)
+
+    # Compute Citation Readability metrics
+    if rendered_words is not None and rendered_words > 0:
+        citation_readability_pct = round((visible_words / rendered_words) * 100) if rendered_words > 0 else 100
+        missing_words_count = max(0, rendered_words - visible_words)
+    elif rendered_words is not None:
+        # Rendered page also empty
+        citation_readability_pct = 100 if visible_words == 0 else 100
+        missing_words_count = 0
+
+    # C1 Finding: Significant content gap between raw HTML and rendered page
+    if citation_readability_pct is not None and citation_readability_pct < 50 and missing_words_count and missing_words_count > 100:
+        severity = "critical" if citation_readability_pct < 25 else "high"
+        findings.append(
+            {
+                "category": "rendering",
+                "title": f"Citation readability critically low ({citation_readability_pct}% — {missing_words_count} words invisible to AI agents)",
+                "severity": severity,
+                "confidence": "high",
+                "root_cause": f"Only {citation_readability_pct}% of page content is readable from initial HTML. {missing_words_count} words are rendered client-side and invisible to AI crawlers.",
+                "cause_family": "DISCOVERY.REPRESENTATION_AVAILABILITY",
+                "id": "CITATION_READABILITY_GAP",
+                "cause_id": "CITATION_READABILITY_GAP",
+                "impact": f"AI search crawlers reading raw HTML see only {visible_words} of {rendered_words} total words ({citation_readability_pct}%). The remaining {missing_words_count} words require JavaScript execution and are invisible to most AI retrieval bots.",
+                "evidence": f"Initial HTML: {visible_words} words. Rendered page: {rendered_words} words. Citation readability: {citation_readability_pct}%. Missing words: {missing_words_count}.",
+                "suggested_action": {
+                    "summary": f"Increase citation readability from {citation_readability_pct}% to >90% by pre-rendering {missing_words_count} words of content into initial HTML.",
+                    "technical_fix": f"Implement Server-Side Rendering (SSR) or Static Site Generation (SSG) on {base}/ to deliver all {rendered_words} words in initial HTML without requiring JavaScript execution.",
+                    "creative_fix": f"Ensure all product descriptions, brand copy, and educational content are present in semantic HTML (<main>, <article>, <p>) in the initial server response on {base}/.",
+                    "priority": severity,
+                    "verification": f"Fetch raw HTML from {base}/ without JavaScript, count visible words, and confirm citation readability exceeds 90%.",
+                },
+            }
+        )
+    elif citation_readability_pct is not None and citation_readability_pct < 80 and missing_words_count and missing_words_count > 50:
+        findings.append(
+            {
+                "category": "rendering",
+                "title": f"Citation readability below threshold ({citation_readability_pct}% — {missing_words_count} words invisible to AI agents)",
+                "severity": "medium",
+                "confidence": "high",
+                "root_cause": f"Only {citation_readability_pct}% of page content is readable from initial HTML. {missing_words_count} words are rendered via JavaScript.",
+                "cause_family": "DISCOVERY.REPRESENTATION_AVAILABILITY",
+                "id": "CITATION_READABILITY_GAP",
+                "cause_id": "CITATION_READABILITY_GAP",
+                "impact": f"AI search crawlers miss {missing_words_count} words of content that require JavaScript execution.",
+                "evidence": f"Initial HTML: {visible_words} words. Rendered page: {rendered_words} words. Citation readability: {citation_readability_pct}%. Missing words: {missing_words_count}.",
+                "suggested_action": {
+                    "summary": f"Increase citation readability from {citation_readability_pct}% to >90% by server-rendering content.",
+                    "technical_fix": f"Pre-render content on {base}/ so initial HTML contains at least {rendered_words} words.",
+                    "creative_fix": f"Move key brand and product content from client-side JavaScript rendering to server-delivered HTML on {base}/.",
+                    "priority": "medium",
+                    "verification": f"Fetch raw HTML from {base}/ without JavaScript and confirm citation readability exceeds 90%.",
+                },
+            }
+        )
+
     # 1. Definite Framework / JS Dependency Shell (recognized framework container or explicit noscript requirement)
     if visible_words < 25 and (dom.spa_root or dom.noscript_requires_js):
         marker = dom.spa_marker_name or "<noscript> (JavaScript requirement notice)"
@@ -605,16 +722,26 @@ def audit(base, domain, inv=None, state_file=None):
             )
 
     # 4. Proactive /llms.txt content manifest discovery
-    if inv is None:
+    has_llms_txt = False
+    if inv and inv.get("pages"):
+        for pg in inv["pages"]:
+            if pg.get("url", "").rstrip("/").endswith("/llms.txt"):
+                if pg.get("status") == 200:
+                    has_llms_txt = True
+                break
+    elif inv is None:
         llms_status = safe_check_status(f"{base}/llms.txt", timeout=5)
-        if llms_status == 404:
-            observations.append(
-                {
-                    "observation": "No /llms.txt standard manifest found.",
-                    "impact": "While not required for AI Overviews, providing an /llms.txt file gives AI research agents a clean, curated summary of brand facts without HTML parsing friction.",
-                    "role": "informational",
-                }
-            )
+        if llms_status == 200:
+            has_llms_txt = True
+
+    if not has_llms_txt:
+        observations.append(
+            {
+                "observation": "No /llms.txt standard manifest found.",
+                "impact": "While not required for AI Overviews, providing an /llms.txt file gives AI research agents a clean, curated summary of brand facts without HTML parsing friction.",
+                "role": "informational",
+            }
+        )
 
     if state_file:
         import tempfile as _tf
@@ -624,20 +751,45 @@ def audit(base, domain, inv=None, state_file=None):
             json.dump(state, f)
         os.replace(_tmp, state_file)
 
+    # Build coverage with citation readability metrics
+    coverage_data = {
+        "visible_words_initial_html": visible_words,
+        "robots_txt_status": r_status,
+        "canonical_declared": dom.canonical,
+        "meta_robots_declared": dom.meta_robots,
+    }
+
+    # Add Citation Readability metrics (Adobe-competitive)
+    if citation_readability_pct is not None:
+        coverage_data["visible_words_rendered"] = rendered_words
+        coverage_data["citation_readability_pct"] = citation_readability_pct
+        coverage_data["missing_words"] = missing_words_count
+    if rendering_error:
+        coverage_data["rendering_note"] = rendering_error
+
+    # Semantic HTML structure audit
+    coverage_data["semantic_elements"] = {
+        "headings_count": dom.headings_count,
+        "paragraphs_count": dom.paragraphs_count,
+        "body_content_elements": dom.body_content_elements,
+        "has_spa_root": dom.spa_root,
+    }
+
+    limitations = []
+    if rendering_error:
+        limitations.append(f"Headless rendering encountered an issue: {rendering_error}. Citation readability may be incomplete.")
+    elif citation_readability_pct is None:
+        limitations.append("Headless rendering was not available; citation readability score could not be computed.")
+    else:
+        limitations.append("Citation readability was computed by comparing initial HTML text against Playwright headless-rendered text.")
+
     return {
         "status": "ok",
         "findings": findings,
         "recommendations": recommendations,
         "observations": observations,
-        "coverage": {
-            "visible_words_initial_html": visible_words,
-            "robots_txt_status": r_status,
-            "canonical_declared": dom.canonical,
-            "meta_robots_declared": dom.meta_robots,
-        },
-        "limitations": [
-            "Raw HTML extractability was evaluated directly; JavaScript headless rendering was not executed."
-        ],
+        "coverage": coverage_data,
+        "limitations": limitations,
     }
 
 
