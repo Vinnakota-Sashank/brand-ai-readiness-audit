@@ -54,18 +54,18 @@
         "low": {
           "type": "integer",
           "minimum": 0
-        },
+        }
+      },
+      "additionalProperties": false
+    },
+    "ingestion_metrics": {
+      "type": "object",
+      "properties": {
         "static_ingestion_rate_pct": {
           "type": ["number", "null"]
         },
         "hydration_deficit_words": {
           "type": ["integer", "null"]
-        },
-        "brand_readiness_index": {
-          "type": ["number", "integer", "null"]
-        },
-        "readiness_tier": {
-          "type": ["string", "null"]
         },
         "citation_readability_pct": {
           "type": ["number", "null"]
@@ -78,6 +78,12 @@
         },
         "visible_words_rendered": {
           "type": ["integer", "null"]
+        },
+        "client_hydration_required": {
+          "type": ["boolean", "null"]
+        },
+        "ssr_parity_status": {
+          "type": ["string", "null"]
         }
       },
       "additionalProperties": false
@@ -308,9 +314,6 @@
       "items": {
         "type": "string"
       }
-    },
-    "geo_scores": {
-      "type": "object"
     },
     "domain_scores": {
       "type": "object"

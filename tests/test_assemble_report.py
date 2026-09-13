@@ -48,12 +48,20 @@ class TestAssembleReport(unittest.TestCase):
                 "priority": "critical",
             },
         }
-        report = assemble(self.site, [candidate], self.records, CHECKS, self.coverage)
+        report = assemble(self.site, [candidate], self.records, CHECKS, self.coverage, include_diagnostics=True)
         self.assertEqual(report["site"], self.site)
         self.assertEqual(len(report["findings"]), 1)
         self.assertEqual(report["findings"][0]["severity"], "critical")
         self.assertEqual(report["findings"][0]["priority_index"], 5 * 4 + (6 - 2))  # 20 + 4 = 24
         self.assertEqual(len(report["dropped_findings"]), 0)
+
+    def test_default_clean_report_omits_trailing_diagnostics(self):
+        """Default production report terminates cleanly at findings without trailing diagnostic clutter."""
+        report = assemble(self.site, [], self.records, CHECKS, self.coverage)
+        self.assertIn("findings", report)
+        self.assertNotIn("dropped_findings", report)
+        self.assertNotIn("coverage", report)
+        self.assertNotIn("limitations", report)
 
     def test_fabricated_quote_rejected_by_evidence_gate(self):
         """A candidate with a quote not present in the artifact must be dropped."""
@@ -74,7 +82,7 @@ class TestAssembleReport(unittest.TestCase):
                 }
             ],
         }
-        report = assemble(self.site, [candidate], self.records, CHECKS, self.coverage)
+        report = assemble(self.site, [candidate], self.records, CHECKS, self.coverage, include_diagnostics=True)
         self.assertEqual(len(report["findings"]), 0)
         self.assertEqual(len(report["dropped_findings"]), 1)
         self.assertIn("Quote not found", report["dropped_findings"][0]["reason"])

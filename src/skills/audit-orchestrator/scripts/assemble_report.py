@@ -242,12 +242,10 @@ def compute_domain_scores(findings, coverage_data=None):
 
     result = {
         "brand_readiness_index": overall_score,
-        "overall_score": overall_score,  # backward compatibility
         "overall_grade": overall_grade,
         "readiness_tier": readiness_tier,
         "tier_description": tier_desc,
         "domains": domain_output,
-        "categories": domain_output,  # backward compatibility
     }
     return result
 
@@ -399,7 +397,7 @@ def sort_tasks(items):
 
 
 def assemble(site, candidates, records, checks, coverage=None, browser=None,
-             discoverability_coverage=None):
+             discoverability_coverage=None, include_diagnostics=False):
     """Assemble verified candidates into a schema-valid Draft-07 audit report.
 
     Args:
@@ -538,27 +536,33 @@ def assemble(site, candidates, records, checks, coverage=None, browser=None,
         "low": sum(1 for f in schema_findings if f["severity"] == "low"),
     }
 
-    # Add Static Ingestion Rate & Hydration Deficit metrics
+    # Populate dedicated Ingestion & Hydration metrics
+    ingestion_metrics = {}
     if discoverability_coverage:
         static_rate = discoverability_coverage.get("static_ingestion_rate_pct")
         if static_rate is None:
-            static_rate = discoverability_coverage.get("citation_readability_pct")
+            static_rate = discoverability_coverage.get("citation_readability_pct", 100)
         deficit_words = discoverability_coverage.get("hydration_deficit_words")
         if deficit_words is None:
             deficit_words = discoverability_coverage.get("missing_words", 0)
 
-        summary["static_ingestion_rate_pct"] = static_rate
-        summary["hydration_deficit_words"] = deficit_words
-        # Backward-compatible aliases
-        summary["citation_readability_pct"] = static_rate
-        summary["citation_readability_missing_words"] = deficit_words
-        summary["visible_words_initial_html"] = discoverability_coverage.get("visible_words_initial_html", 0)
-        summary["visible_words_rendered"] = discoverability_coverage.get("visible_words_rendered", 0)
+        initial_words = discoverability_coverage.get("visible_words_initial_html", 0)
+        rendered_words = discoverability_coverage.get("visible_words_rendered", initial_words)
+        has_deficit = bool(deficit_words and deficit_words > 0)
 
-    # Compute Domain & GEO Scores
+        ingestion_metrics = {
+            "static_ingestion_rate_pct": static_rate,
+            "hydration_deficit_words": deficit_words,
+            "citation_readability_pct": static_rate,
+            "citation_readability_missing_words": deficit_words,
+            "visible_words_initial_html": initial_words,
+            "visible_words_rendered": rendered_words,
+            "client_hydration_required": has_deficit,
+            "ssr_parity_status": "full_parity" if not has_deficit else "hydration_deficit",
+        }
+
+    # Compute Domain Scores
     domain_scores = compute_domain_scores(schema_findings, discoverability_coverage)
-    summary["brand_readiness_index"] = domain_scores["brand_readiness_index"]
-    summary["readiness_tier"] = domain_scores["readiness_tier"]
 
     # Generate proactive recommendations (e.g. autonomous /llms.txt manifest)
     proactive_actions = []
@@ -568,6 +572,8 @@ def assemble(site, candidates, records, checks, coverage=None, browser=None,
     if llms_missing:
         from urllib.parse import urlparse
         domain_name = urlparse(site).netloc or site.replace("https://", "").replace("http://", "").split("/")[0]
+        if domain_name.lower().startswith("www."):
+            domain_name = domain_name[4:]
         brand_title = domain_name.split(".")[0].capitalize()
         proactive_actions.append(
             {
@@ -587,19 +593,22 @@ def assemble(site, candidates, records, checks, coverage=None, browser=None,
         "audited_at": now(),
         "audit_status": "complete",
         "summary": summary,
+        "ingestion_metrics": ingestion_metrics,
         "domain_scores": domain_scores,
-        "geo_scores": domain_scores,  # backward compatibility alias
         "proactive_actions": proactive_actions,
         "findings": schema_findings,
-        "observations": observations,
-        "dropped_findings": dropped,
-        "coverage": coverage or {"observed": [], "blocked": [], "not_applicable": []},
-        "limitations": [
+    }
+
+    if include_diagnostics:
+        if observations:
+            report["observations"] = observations
+        report["dropped_findings"] = dropped
+        report["coverage"] = coverage or {"observed": [], "blocked": [], "not_applicable": []}
+        report["limitations"] = [
             "An empty findings array is not a pass.",
             "No citation, traffic or conversion uplift is measured.",
             "Recommendations only; no changes were applied to the website."
-        ],
-    }
+        ]
 
     validate_report(report)
     return report

@@ -26,6 +26,7 @@ if SCRIPT_DIR not in sys.path:
     sys.path.insert(0, SCRIPT_DIR)
 
 
+# pyrefly: ignore [missing-import]
 from safe_fetch import safe_fetch
 
 # Weighted Answerability Schema by Page Type (Structured & Measurable Material Attributes)
