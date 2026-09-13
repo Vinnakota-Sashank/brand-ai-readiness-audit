@@ -1,6 +1,6 @@
 # Benchmarking, Evals & Automated Quality Assurance
 
-**Author:** Jayanth Reddy Konda & Engineering Team  
+**Author:** vinnakota sashank & Engineering Team
 **Version:** 2.1.0  
 **Standard:** `agentskills.io` Evaluation Specification  
 

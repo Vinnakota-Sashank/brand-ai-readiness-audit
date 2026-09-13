@@ -12,7 +12,7 @@ metadata:
   role: specialist
   parent: audit-orchestrator
   version: "1.0.0"
-  author: "Jayanth Reddy Konda"
+   author: "vinnakota sashank"
 allowed-tools:
   - run_command
   - view_file
@@ -26,6 +26,8 @@ allowed-tools:
 | **Visitor Continuity & Information Scent Check** | `python3 skills/engagement-context-audit/scripts/engagement_check.py --site https://example.com --inventory <inv> --state <state>` | `status`, `findings`, `recommendations` |
 
 > **Black-Box Tooling Principle:** Bundled scripts in `scripts/` are deterministic tools. Run `python3 scripts/<script>.py --help` for interface documentation.
+
+> **Sensor-Brain Contract:** `engagement_check.py` measures structural orientation and navigation proxies from the shared inventory. Without first-party analytics, it cannot prove bounce or abandonment. The AI agent must keep observed outcomes separate from static friction signals.
 
 Evaluates the above-the-fold visitor experience, heading information scent, destination reachability, and intent continuity for visitors referred from AI search answers. Detects content and navigation friction that causes visitor bounce.
 
@@ -48,6 +50,8 @@ Evaluates the above-the-fold visitor experience, heading information scent, dest
 - `--inventory <path>`: (Optional) Pre-acquired site inventory JSON payload
 - `--state <path>`: (Optional) Shared Stateful Knowledge Graph file
 - `--format json`: Machine-readable JSON output mode
+
+Use the shared inventory for deterministic offline inspection. Analytics may corroborate a finding, but they must not be treated as a substitute for page evidence.
 
 ## References & Documentation Library
 
@@ -103,6 +107,10 @@ python3 skills/engagement-context-audit/scripts/engagement_check.py --site https
 5. **404 Recovery (`EXPERIENCE.RECOVERY.BROKEN_LANDING_RECOVERY`):**
    - If an AI-referred visitor arrives at a stale/broken URL, evaluate if the 404 page provides a brand search bar, category links, or main navigation to retain the visitor (Severity: `medium` S2).
 
+6. **Evidence Calibration:**
+   - A missing or generic H1 is a structural recommendation when title and hero copy orient the visitor.
+   - Escalate static friction only when analytics or direct DOM evidence supports the stronger claim; never infer site-wide funnel abandonment from one page.
+
 ---
 
 ## Output Format & Strict Mandate
@@ -117,6 +125,7 @@ Emits strictly valid JSON matching the schema with zero prose commentary:
 - **Cookie Banners are NOT Defects:** Cookie consent dialogs are legally required and must never be flagged as intrusive overlays.
 - **Missing H1 is a Recommendation:** An absent or generic `<h1>` tag alone is emitted as a proactive recommendation (`LOW_INFORMATION_SCENT`), not a critical defect, if title and hero copy clearly orient the visitor.
 - **Commercial Continuity:** Intent mismatch is only reported when a page provides bottom-funnel commercial pricing facts but provides zero next-step interactive or sales navigation.
+- **No additive severity:** When one issue affects discoverability and engagement, report the highest justified causal severity once and link the secondary impact as context.
 
 ## Security & SSRF Policy
 

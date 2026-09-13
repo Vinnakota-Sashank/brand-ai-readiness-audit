@@ -1,6 +1,6 @@
 # Empirical Generative Engine Optimization (GEO) Synthesis
 
-**Author:** Jayanth Reddy Konda  
+**Author:** vinnakota sashank
 **Version:** 2.0.0  
 **Foundational Research:** 
 - Princeton University, Georgia Tech, Allen AI (*KDD 2024*): *"GEO: Generative Engine Optimization"*

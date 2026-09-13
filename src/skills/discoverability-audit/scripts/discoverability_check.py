@@ -26,6 +26,10 @@ if SCRIPT_DIR not in sys.path:
 
 
 from safe_fetch import safe_check_status, safe_fetch
+from robots_parser import RobotsParser
+from sitemap_validator import validate_sitemap_data
+from source_signals import detect_source_signals
+from nav_verifier import verify_navigation_and_gates
 
 AI_BOTS = [
     "OAI-SearchBot",
@@ -229,26 +233,17 @@ def parse_domain(site):
 
 
 def parse_robots(body):
-    """Parse robots.txt into UA-grouped rule lists (RFC 9309-style groups)."""
+    """Parse robots.txt into UA-grouped rule lists using RFC 9309 RobotsParser."""
+    parser = RobotsParser(body or "")
     groups = []
-    sitemaps = []
-    current = None
-    for line in (body or "").splitlines():
-        line = line.split("#")[0].strip()
-        if not line or ":" not in line:
-            continue
-        k, v = line.split(":", 1)
-        k, v = k.strip().lower(), v.strip()
-        if k == "user-agent":
-            if current is None or current["rules"]:
-                current = {"agents": [], "rules": []}
-                groups.append(current)
-            current["agents"].append(v.lower())
-        elif k == "sitemap":
-            sitemaps.append(v)
-        elif k in ("allow", "disallow") and current is not None:
-            current["rules"].append((k, v))
-    return groups, sitemaps
+    for g in parser.groups:
+        rules = [(r["type"], r["pattern"]) for r in g["rules"]]
+        groups.append({
+            "agents": g["agents"],
+            "rules": rules,
+            "crawl_delay": g.get("crawl_delay", 0.0),
+        })
+    return groups, parser.get_declared_sitemaps()
 
 
 def _pattern_matches(pattern, path):
@@ -260,30 +255,19 @@ def _pattern_matches(pattern, path):
 
 
 def robots_access(groups, ua, path="/"):
-    """Decide allow/deny for a user-agent + path per RFC 9309 rules.
-    Specific user-agent groups take precedence over the generic '*' group."""
-    ua = ua.lower()
-    specific_rules = []
-    wildcard_rules = []
-
+    """Decide allow/deny for a user-agent + path per RFC 9309 rules."""
+    # Build a temporary RobotsParser-compatible text to re-evaluate with full REP precedence
+    synthetic_lines = []
     for g in groups:
-        agents = [a.lower() for a in g.get("agents", [])]
-        if ua in agents:
-            specific_rules.extend(g.get("rules", []))
-        elif "*" in agents:
-            wildcard_rules.extend(g.get("rules", []))
-
-    rules = specific_rules if specific_rules else wildcard_rules
-
-    best = ("allow", None, -1)
-    for k, v in rules:
-        if not v:
-            continue
-        if _pattern_matches(v, path):
-            specificity = len(v)
-            if k == "allow" and specificity == best[2] or specificity > best[2]:
-                best = (k, v, specificity)
-    return best[0], best[1]
+        for a in g.get("agents", []):
+            synthetic_lines.append(f"User-agent: {a}")
+        for r_type, r_pat in g.get("rules", []):
+            synthetic_lines.append(f"{r_type.capitalize()}: {r_pat}")
+    parser = RobotsParser("\n".join(synthetic_lines))
+    res = parser.evaluate(path, ua)
+    rule_obj = res.get("matched_rule")
+    rule_str = rule_obj.get("pattern") if rule_obj else None
+    return ("allow" if res["allowed"] else "disallow"), rule_str
 
 
 def audit(base, domain, inv=None, state_file=None):
@@ -322,6 +306,12 @@ def audit(base, domain, inv=None, state_file=None):
     else:
         status, html, headers, err = safe_fetch(base + "/", timeout=10, max_bytes=2 * 1024 * 1024)
         r_status, robots_txt, _, _ = safe_fetch(base + "/robots.txt", timeout=8, max_bytes=512 * 1024)
+        home_page = {
+            "url": base + "/",
+            "status": status,
+            "html": html,
+            "headers": headers,
+        }
 
     state = {"version": 1, "entities": {}, "facts": {}, "claims": {}, "observations": {}, "page_context": {}}
     if state_file and os.path.exists(state_file):
@@ -373,9 +363,9 @@ def audit(base, domain, inv=None, state_file=None):
     # Check Contract C3: Differential AI Crawler Access / WAF Block Probe
     if inv is None or status == 200:
         bot_ua = "Mozilla/5.0 (compatible; OAI-SearchBot/1.0; +https://openai.com/searchbot)"
-        bot_status, _, _, _ = safe_fetch(base + "/", timeout=6, max_bytes=65536, user_agent=bot_ua, method="HEAD")
+        bot_status, _, _, _ = safe_fetch(base + "/", timeout=4, max_bytes=65536, user_agent=bot_ua, method="HEAD")
         if bot_status in (403, 405, 501):
-            bot_status, _, _, _ = safe_fetch(base + "/", timeout=6, max_bytes=65536, user_agent=bot_ua, method="GET")
+            bot_status, _, _, _ = safe_fetch(base + "/", timeout=4, max_bytes=65536, user_agent=bot_ua, method="GET")
         if bot_status in (403, 401, 503) and status == 200:
             findings.append(
                 {
@@ -405,6 +395,33 @@ def audit(base, domain, inv=None, state_file=None):
         dom.feed(html)
     except Exception:
         pass
+
+    # Source Signals Analysis (Empty hrefs, interstitial gates, structured identity)
+    if html:
+        try:
+            signals = detect_source_signals(html, base + "/")
+            for sig in signals:
+                findings.append({
+                    "category": "crawlability",
+                    "title": sig["title"],
+                    "severity": sig["severity"],
+                    "confidence": "high",
+                    "root_cause": sig["issue"],
+                    "cause_family": "DISCOVERY.DISCOVERY_PATH" if sig["check_id"] == "B4" else "DISCOVERY.ACCESS",
+                    "id": sig["check_id"],
+                    "cause_id": sig["check_id"],
+                    "impact": sig["issue"],
+                    "evidence": sig["evidence"],
+                    "suggested_action": {
+                        "summary": sig["action"],
+                        "technical_fix": sig["action"],
+                        "creative_fix": None,
+                        "priority": sig["severity"],
+                        "verification": f"Inspect {base}/ source to confirm {sig['type']} is resolved.",
+                    },
+                })
+        except Exception:
+            pass
 
     # Meta Robots Check (Combines <meta name="robots"> and X-Robots-Tag header, checks for noindex and none)
     x_robots = str(headers.get("x-robots-tag", "")).lower()
@@ -496,6 +513,13 @@ def audit(base, domain, inv=None, state_file=None):
                 }
             )
 
+    # ── Check B4 & C2: Navigation Route Verification & Form-Gated Entity Discovery ──
+    try:
+        nav_findings = verify_navigation_and_gates(base, html, inv=inv)
+        findings.extend(nav_findings)
+    except Exception:
+        pass
+
     # Initial HTML Text & Rendering Risk Check
     visible_words = len(" ".join(dom.text).split())
     has_semantic_content = (dom.headings_count >= 1 and dom.paragraphs_count >= 1) or visible_words >= 15
@@ -523,7 +547,7 @@ def audit(base, domain, inv=None, state_file=None):
         try:
             from playwright.sync_api import sync_playwright
             with sync_playwright() as pw:
-                browser = pw.chromium.launch(headless=True)
+                browser = pw.chromium.launch(headless=True, timeout=3000)
                 context = browser.new_context(
                     user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
                 )
@@ -741,14 +765,48 @@ def audit(base, domain, inv=None, state_file=None):
             }
         )
 
-    # 3. robots.txt Analysis
+    # 3. robots.txt Analysis (RFC 9309 Compliant)
     if r_status == 200 and robots_txt:
-        groups, _sitemaps = parse_robots(robots_txt)
+        parser = RobotsParser(robots_txt)
+
+        # Check for HTML responses returned as robots.txt
+        if parser.is_html:
+            findings.append(
+                {
+                    "category": "crawlability",
+                    "title": "Invalid robots.txt: HTML page returned instead of REP plain text",
+                    "severity": "critical",
+                    "confidence": "high",
+                    "root_cause": "The /robots.txt endpoint serves HTML rather than plain text, violating RFC 9309.",
+                    "cause_family": "DISCOVERY.ACCESS",
+                    "id": "A1",
+                    "cause_id": "ROBOTS_TXT_HTML_ERROR",
+                    "impact": "Search crawlers and AI retrieval bots treat HTML responses as syntax errors or full-crawl blocks.",
+                    "evidence": f"GET {base}/robots.txt returned Content-Type HTML with DOCTYPE/HTML markup.",
+                    "suggested_action": {
+                        "summary": f"Serve plain text (text/plain) for {base}/robots.txt or return HTTP 404.",
+                        "technical_fix": "Configure web server to return a static text/plain robots.txt file.",
+                        "creative_fix": None,
+                        "priority": "critical",
+                        "verification": f"curl -sI {base}/robots.txt and verify Content-Type: text/plain.",
+                    },
+                }
+            )
+
         blocked_retrieval = []
         blocked_training = []
+        crawl_delays = []
 
         for bot in AI_BOTS:
-            decision, rule = robots_access(groups, bot, "/")
+            eval_res = parser.evaluate("/", bot)
+            decision = "allow" if eval_res["allowed"] else "disallow"
+            rule_obj = eval_res.get("matched_rule")
+            rule = rule_obj.get("pattern") if rule_obj else None
+            delay = eval_res.get("crawl_delay", 0.0)
+
+            if delay > 5.0 and bot in ("OAI-SearchBot", "Claude-SearchBot", "PerplexityBot"):
+                crawl_delays.append((bot, delay))
+
             sem = CRAWLER_SEMANTICS.get(bot, {"role": "general", "impact_desc": ""})
             role = sem["role"]
 
@@ -803,6 +861,62 @@ def audit(base, domain, inv=None, state_file=None):
                     "role": "training",
                 }
             )
+
+        # High crawl-delay advisory observation
+        if crawl_delays:
+            delays_str = ", ".join(f"{b} ({d}s)" for b, d in crawl_delays)
+            observations.append(
+                {
+                    "observation": f"High Crawl-delay advisory directive declared in robots.txt for: {delays_str}.",
+                    "impact": "Excessive crawl-delay values (>5s) can throttle real-time AI citation indexing.",
+                    "role": "performance",
+                }
+            )
+
+        # 3b. Sitemap Protocol Validation
+        declared_sitemaps = parser.get_declared_sitemaps()
+        if inv is not None:
+            sitemaps_to_probe = list(declared_sitemaps) or [
+                s.get("url", "") for s in inv.get("sitemaps", []) if isinstance(s, dict) and s.get("url")
+            ]
+        else:
+            sitemaps_to_probe = list(declared_sitemaps) if declared_sitemaps else [f"{base}/sitemap.xml"]
+
+        for sm_url in sitemaps_to_probe[:2]:
+            sm_status, sm_raw, _, _ = safe_fetch(sm_url, timeout=4, max_bytes=2 * 1024 * 1024)
+            if sm_status == 200 and sm_raw:
+                sm_res = validate_sitemap_data(sm_raw, sm_url)
+                if not sm_res["valid"]:
+                    err_msg = "; ".join(sm_res["errors"][:2])
+                    findings.append(
+                        {
+                            "category": "crawlability",
+                            "title": f"Sitemap protocol error at {sm_url}",
+                            "severity": "high",
+                            "confidence": "high",
+                            "root_cause": f"Sitemap at {sm_url} violates sitemaps.org 0.9 XML schema: {err_msg}",
+                            "cause_family": "DISCOVERY.DISCOVERY_PATH",
+                            "id": "A3",
+                            "cause_id": "SITEMAP_PROTOCOL_ERROR",
+                            "impact": "Search engines and AI discovery agents cannot parse site structure or discover unlinked content.",
+                            "evidence": f"Validation errors on {sm_url}: {err_msg}.",
+                            "suggested_action": {
+                                "summary": f"Correct XML schema errors in {sm_url}.",
+                                "technical_fix": "Ensure sitemap root declares xmlns='http://www.sitemaps.org/schemas/sitemap/0.9' and valid <url><loc> entries.",
+                                "creative_fix": None,
+                                "priority": "high",
+                                "verification": f"Fetch {sm_url} and validate against sitemaps.org schema.",
+                            },
+                        }
+                    )
+                else:
+                    observations.append(
+                        {
+                            "observation": f"Valid {sm_res['kind']} sitemap verified at {sm_url} ({sm_res['entry_count']} URLs, gzip={sm_res['gzip']}).",
+                            "impact": "Search and AI agents can efficiently discover canonical URLs and update timestamps.",
+                            "role": "discovery",
+                        }
+                    )
 
     # 4. Proactive /llms.txt content manifest discovery
     has_llms_txt = False

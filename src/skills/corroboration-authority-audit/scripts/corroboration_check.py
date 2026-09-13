@@ -151,13 +151,31 @@ def audit(base, domain, inv=None, state_file=None):
 
     checked = []
     broken = []
+    candidate_urls = [u for u in sameas_urls[:5] if not u.startswith(base)]
 
-    for u in sameas_urls[:5]:
-        if u.startswith(base):
-            continue
+    fetch_results = {}
+    if candidate_urls:
+        import concurrent.futures
 
+        def _fetch_single_sameas(target_url):
+            s, h, _, _ = safe_fetch(target_url, timeout=3.5, max_bytes=512 * 1024, method="GET")
+            return target_url, s, h
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=min(5, len(candidate_urls))) as pool:
+            futs = {pool.submit(_fetch_single_sameas, u): u for u in candidate_urls}
+            try:
+                for fut in concurrent.futures.as_completed(futs, timeout=4.0):
+                    try:
+                        u, status, ext_html = fut.result()
+                        fetch_results[u] = (status, ext_html)
+                    except Exception:
+                        pass
+            except concurrent.futures.TimeoutError:
+                pass
+
+    for u in candidate_urls:
         checked.append(u)
-        status, ext_html, _, _ = safe_fetch(u, timeout=5, max_bytes=512 * 1024, method="GET")
+        status, ext_html = fetch_results.get(u, (408, ""))
         if status != 200:
             broken.append(f"{u} (HTTP {status})")
 

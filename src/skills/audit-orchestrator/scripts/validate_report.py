@@ -49,6 +49,12 @@ def validate_type(instance, schema, path="root"):
     if "minLength" in schema and isinstance(instance, str) and len(instance) < schema["minLength"]:
         return f"{path}: String too short, expected at least {schema['minLength']} chars"
 
+    if "pattern" in schema and isinstance(instance, str):
+        import re
+
+        if not re.search(schema["pattern"], instance):
+            return f"{path}: String '{instance}' does not match pattern '{schema['pattern']}'"
+
     if isinstance(instance, dict):
         if "required" in schema:
             for req in schema["required"]:

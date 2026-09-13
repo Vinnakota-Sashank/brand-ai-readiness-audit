@@ -66,12 +66,23 @@ def _is_safe_host(hostname):
         return False, f"DNS resolution failed: {e}", []
 
 
+def _connect_safe(safe_ips, port, timeout, source_address):
+    sorted_ips = sorted(safe_ips, key=lambda sf: 0 if sf[0] == socket.AF_INET else 1)
+    last_err = None
+    for sf in sorted_ips:
+        try:
+            return socket.create_connection((sf[4][0], port), timeout, source_address)
+        except (OSError, socket.error) as err:
+            last_err = err
+    raise urllib.error.URLError(f"Failed to connect to host: {last_err}")
+
+
 class SafeHTTPConnection(http.client.HTTPConnection):
     def connect(self):
         is_safe, err, safe_ips = _is_safe_host(self.host)
         if not is_safe:
             raise urllib.error.URLError(f"SSRF blocked: {err}")
-        self.sock = socket.create_connection((safe_ips[0][4][0], self.port), self.timeout, self.source_address)
+        self.sock = _connect_safe(safe_ips, self.port, self.timeout, self.source_address)
 
 
 class SafeHTTPSConnection(http.client.HTTPSConnection):
@@ -79,7 +90,7 @@ class SafeHTTPSConnection(http.client.HTTPSConnection):
         is_safe, err, safe_ips = _is_safe_host(self.host)
         if not is_safe:
             raise urllib.error.URLError(f"SSRF blocked: {err}")
-        self.sock = socket.create_connection((safe_ips[0][4][0], self.port), self.timeout, self.source_address)
+        self.sock = _connect_safe(safe_ips, self.port, self.timeout, self.source_address)
         if self._tunnel_host:
             self.sock = self.sock
             self._tunnel()

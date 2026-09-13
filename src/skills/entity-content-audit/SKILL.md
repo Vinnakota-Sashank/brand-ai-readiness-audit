@@ -12,7 +12,7 @@ metadata:
   role: specialist
   parent: audit-orchestrator
   version: "1.0.0"
-  author: "Jayanth Reddy Konda"
+  author: "vinnakota sashank"
 allowed-tools:
   - run_command
   - view_file
@@ -26,6 +26,8 @@ allowed-tools:
 | **Schema.org & Entity Answerability Check** | `python3 skills/entity-content-audit/scripts/entity_content_check.py --site https://example.com --inventory <inv> --state <state>` | `status`, `findings`, `recommendations` |
 
 > **Black-Box Tooling Principle:** Bundled scripts in `scripts/` are deterministic tools. Run `python3 scripts/<script>.py --help` for interface documentation.
+
+> **Sensor-Brain Contract:** `entity_content_check.py` measures parsed JSON-LD and the weighted Answerability Index from the shared inventory. It must report observed fields and evidence only; the AI agent decides whether a gap is material and authors any schema or copy remediation. Never fabricate prices, availability, credentials, or identity anchors.
 
 Evaluates whether an AI search system can resolve the brand's entity identity (`Organization`) and extract its commercial offerings (`Product`, `Offer`, `Service`). Computes the mathematically reproducible weighted **Answerability Index** across sampled HTML pages.
 
@@ -48,6 +50,8 @@ Evaluates whether an AI search system can resolve the brand's entity identity (`
 - `--inventory <path>`: (Optional) Pre-acquired site inventory JSON payload
 - `--state <path>`: (Optional) Shared Stateful Knowledge Graph file
 - `--format json`: Machine-readable JSON output mode
+
+Use the shared inventory whenever possible. Entity analysis is offline and must not issue a second crawl. If a page is an unhydrated client-side shell, treat missing entities as inconclusive rather than as proof that the site has no structured data.
 
 ## References & Documentation Library
 
@@ -89,9 +93,9 @@ python3 skills/entity-content-audit/scripts/entity_content_check.py --site https
 ### Step 3: Decision Protocol & Check Logic
 
 1. **Organization Entity Resolution (`ENTITY.IDENTITY.MATERIAL_ENTITY_AMBIGUITY`):**
-   - Extract JSON-LD (`Organization`, `Brand`, `Corporation`), OpenGraph (`og:site_name`), and `<title>`.
-   - If no machine-explicit Organization block, `og:site_name`, or descriptive title exists -> `medium` finding.
-   - If stated in human text but lacking JSON-LD -> emit an extractability **recommendation**, NOT a critical defect finding.
+  - Extract JSON-LD (`Organization`, `Brand`, `Corporation`), OpenGraph (`og:site_name`), and `<title>` as separate evidence channels.
+  - If no machine-explicit Organization block exists, report an extractability weakness even when title or OpenGraph text names the brand; those tags do not replace linked entity data.
+  - If the page is a sparse CSR shell, return `inconclusive` rather than reporting missing entities.
 2. **Offer Attribute Completeness (`ENTITY.ANSWERABILITY.INCOMPLETE_OFFER_ATTRIBUTES`):**
    - Extract Product and Offer entities. Flag when critical commercial fields (price, availability, product name) are omitted from structured markup.
 3. **Mathematical Answerability Engine (`ENTITY.ANSWERABILITY.MISSING_MATERIAL_FACT`):**
@@ -131,6 +135,9 @@ Emits strictly valid JSON matching the schema with zero prose commentary:
 - **Never flag missing schema on CSR shells:** If a page contains fewer than 25 words due to client-side rendering, return `status: inconclusive` rather than reporting missing entities.
 - **Missing sameAs is an advisory recommendation:** Never report missing `sameAs` links as a critical defect finding; emit as a proactive recommendation.
 - **Non-Commerce Sites:** Do not penalize service, media, or portfolio sites for omitting ecommerce `Product` schema.
+- **Channel differences are not contradictions:** A valid fact in JSON-LD but not visible body copy is a channel gap, not proof that either value is false.
+- **Multiple valid graph nodes are normal:** Organization, WebSite, Product, FAQPage, and other compatible nodes in one `@graph` are not duplicates by themselves.
+- **Evidence rule:** A finding must identify the page, extracted field, and observed value. Syntax validity alone does not prove that a commercial value is truthful.
 
 ## Security & SSRF Policy
 

@@ -48,12 +48,12 @@ class TestAssembleReport(unittest.TestCase):
                 "priority": "critical",
             },
         }
-        report = assemble(self.site, [candidate], self.records, CHECKS, self.coverage, include_diagnostics=True)
+        report = assemble(self.site, [candidate], self.records, CHECKS, self.coverage)
         self.assertEqual(report["site"], self.site)
         self.assertEqual(len(report["findings"]), 1)
         self.assertEqual(report["findings"][0]["severity"], "critical")
         self.assertEqual(report["findings"][0]["priority_index"], 5 * 4 + (6 - 2))  # 20 + 4 = 24
-        self.assertEqual(len(report["dropped_findings"]), 0)
+        self.assertNotIn("dropped_findings", report)
 
     def test_default_clean_report_omits_trailing_diagnostics(self):
         """Default production report terminates cleanly at findings without trailing diagnostic clutter."""
@@ -82,10 +82,9 @@ class TestAssembleReport(unittest.TestCase):
                 }
             ],
         }
-        report = assemble(self.site, [candidate], self.records, CHECKS, self.coverage, include_diagnostics=True)
+        report = assemble(self.site, [candidate], self.records, CHECKS, self.coverage)
         self.assertEqual(len(report["findings"]), 0)
-        self.assertEqual(len(report["dropped_findings"]), 1)
-        self.assertIn("Quote not found", report["dropped_findings"][0]["reason"])
+        self.assertNotIn("dropped_findings", report)
 
     def test_cause_scoped_deduplication(self):
         """Candidates with identical root cause and scope must be merged into one finding."""

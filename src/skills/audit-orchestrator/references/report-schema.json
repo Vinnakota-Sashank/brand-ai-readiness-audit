@@ -58,36 +58,6 @@
       },
       "additionalProperties": false
     },
-    "ingestion_metrics": {
-      "type": "object",
-      "properties": {
-        "static_ingestion_rate_pct": {
-          "type": ["number", "null"]
-        },
-        "hydration_deficit_words": {
-          "type": ["integer", "null"]
-        },
-        "citation_readability_pct": {
-          "type": ["number", "null"]
-        },
-        "citation_readability_missing_words": {
-          "type": ["integer", "null"]
-        },
-        "visible_words_initial_html": {
-          "type": ["integer", "null"]
-        },
-        "visible_words_rendered": {
-          "type": ["integer", "null"]
-        },
-        "client_hydration_required": {
-          "type": ["boolean", "null"]
-        },
-        "ssr_parity_status": {
-          "type": ["string", "null"]
-        }
-      },
-      "additionalProperties": false
-    },
     "proactive_actions": {
       "type": "array",
       "items": {
@@ -155,7 +125,9 @@
         ],
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^F-[0-9]{3,}$",
+            "description": "Deterministic finding identifier strictly formatted as F-XXX (e.g., F-001, F-002)"
           },
           "title": {
             "type": "string"
@@ -300,23 +272,23 @@
         "additionalProperties": false
       }
     },
-    "observations": {
-      "type": "array"
-    },
-    "dropped_findings": {
-      "type": "array"
-    },
-    "coverage": {
-      "type": "object"
-    },
-    "limitations": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "domain_scores": {
-      "type": "object"
+    "site_category": {
+      "type": "object",
+      "properties": {
+        "primary": {
+          "type": "string"
+        },
+        "secondary": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "confidence": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false

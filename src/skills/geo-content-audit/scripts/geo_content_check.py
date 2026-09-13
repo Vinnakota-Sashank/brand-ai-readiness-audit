@@ -453,7 +453,66 @@ def audit(base, domain, inv=None, state_file=None):
                     }
                 )
 
+    # 11. Category-Specific Query Rubrics Evaluation
+    all_rubrics = load_query_rubrics()
+    if all_rubrics and target_pages:
+        # Determine archetype from inventory or page types
+        site_cat = inv.get("site_category") if inv else None
+        detected_category = site_cat.get("primary") if isinstance(site_cat, dict) else None
+        if not detected_category:
+            if any(p.get("page_type") in ("product", "product_detail") for p in target_pages):
+                detected_category = "ECOMMERCE"
+            elif any(p.get("page_type") in ("docs", "documentation") for p in target_pages):
+                detected_category = "DOCUMENTATION"
+            elif any(p.get("page_type") in ("article", "blog") for p in target_pages):
+                detected_category = "BLOG_NEWS"
+            else:
+                detected_category = "GENERIC"
+
+        cat_rubrics = all_rubrics.get(detected_category, all_rubrics.get("GENERIC", []))
+        all_site_text = " ".join(
+            (p.get("text", "") or p.get("html", ""))[:5000].lower() for p in target_pages
+        )
+
+        for rubric in cat_rubrics:
+            q_type = rubric.get("type", "general")
+            question = rubric.get("question", "")
+            components = rubric.get("components", [])
+
+            missing_components = []
+            for comp in components:
+                stems = [s for s in comp.replace("_", " ").split() if len(s) > 3]
+                if stems and not any(stem in all_site_text for stem in stems):
+                    missing_components.append(comp)
+
+            coverage_ratio = (len(components) - len(missing_components)) / max(1, len(components))
+            if coverage_ratio < 0.4 and missing_components:
+                recommendations.append(
+                    {
+                        "id": f"PROACTIVE.GEO.QUERY_RUBRIC.{detected_category}.{q_type.upper()}",
+                        "title": f"Address {detected_category} visitor question: '{question[:50]}...'",
+                        "category": "content",
+                        "summary": f"Content answerability is deficient for core visitor question: '{question}'. Missing expected answer components: {', '.join(missing_components[:3])}.",
+                        "priority": "low",
+                        "technical_fix": f"Structure an explicit answer block addressing: {', '.join(missing_components[:3])}.",
+                        "creative_fix": f"Add a concise direct-answer section or FAQ entry explicitly answering: '{question}'.",
+                        "verification": f"Confirm key terms ({', '.join(missing_components[:2])}) appear in body text.",
+                    }
+                )
+
     return {"status": "ok", "findings": findings, "recommendations": recommendations, "observations": observations}
+
+
+def load_query_rubrics():
+    """Load category-specific visitor question rubrics."""
+    rubrics_path = os.path.join(SCRIPT_DIR, "..", "references", "query-rubrics.json")
+    if os.path.exists(rubrics_path):
+        try:
+            with open(rubrics_path, "r", encoding="utf-8") as f:
+                return json.load(f).get("rubrics", {})
+        except Exception:
+            pass
+    return {}
 
 
 def main():

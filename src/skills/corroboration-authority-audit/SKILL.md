@@ -12,7 +12,7 @@ metadata:
   role: specialist
   parent: audit-orchestrator
   version: "1.0.0"
-  author: "Jayanth Reddy Konda"
+  author: "vinnakota sashank"
 allowed-tools:
   - run_command
   - view_file
@@ -26,6 +26,8 @@ allowed-tools:
 | **External sameAs Authority Prober** | `python3 skills/corroboration-authority-audit/scripts/corroboration_check.py --site https://example.com --inventory <inv> --state <state>` | `status`, `findings`, `recommendations` |
 
 > **Black-Box Tooling Principle:** Bundled scripts in `scripts/` are deterministic tools. Run `python3 scripts/<script>.py --help` for interface documentation.
+
+> **Sensor-Brain Contract:** This sensor verifies declared authority links and returns bounded probe evidence. A `sameAs` URL is an identity candidate, not proof of identity; the AI agent must distinguish broken links, inconclusive probes, self-referential mirrors, and independent corroboration.
 
 Evaluates external entity authority by verifying that declared identity links (`sameAs` in Organization JSON-LD pointing to Wikidata, Crunchbase, Wikipedia, and official social channels) resolve cleanly with HTTP 200 without broken redirect loops or 4xx/5xx HTTP errors.
 
@@ -48,6 +50,8 @@ Evaluates external entity authority by verifying that declared identity links (`
 - `--inventory <path>`: (Optional) Pre-acquired site inventory JSON payload
 - `--state <path>`: (Optional) Shared Stateful Knowledge Graph file
 - `--format json`: Machine-readable JSON output mode
+
+External probes are bounded and read-only. A timeout, rate limit, or network block is `inconclusive`, never a broken-anchor finding. Do not claim that a finite probe proves a profile does not exist.
 
 ## References & Documentation Library
 
@@ -89,6 +93,10 @@ python3 skills/corroboration-authority-audit/scripts/corroboration_check.py --si
    - If a probe times out or is network-blocked -> mark probe as `inconclusive`, never flag as a broken link.
 2. **Absence of Identity Links:**
    - If no `sameAs` links are declared in JSON-LD -> emit a proactive extractability **recommendation**, NOT a broken authority finding.
+
+3. **Evidence Classes:**
+  - Keep outbound `sameAs` assertions separate from inbound backlinks and on-site social links.
+  - Require reciprocal domain confirmation or an explicit identifier match before describing an external page as corroborated.
 
 ---
 

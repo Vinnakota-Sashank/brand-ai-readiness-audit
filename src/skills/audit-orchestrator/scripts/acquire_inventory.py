@@ -284,34 +284,49 @@ def build_inventory(site, max_pages=28, timeout_seconds=90, deadline=None):
     if not sitemap_candidates:
         sitemap_candidates = [base_url + "/sitemap.xml"]
 
-    # 3. Process Sitemaps as Infrastructure Resources
+    # 3. Process Sitemaps as Infrastructure Resources (Concurrent Batches)
     extracted_page_urls = []
     sitemaps_to_process = list(sitemap_candidates)
     processed_sitemaps = set()
 
+    def _fetch_sm(sm_target):
+        st, body, _, _ = safe_fetch(sm_target, timeout=5, max_bytes=2 * 1024 * 1024)
+        return sm_target, st, body
+
     while sitemaps_to_process and len(processed_sitemaps) < 8:
         if deadline and time.monotonic() >= deadline:
             break
-        sm_url = sitemaps_to_process.pop(0)
-        if sm_url in processed_sitemaps:
-            continue
-        sm_netloc = urlparse(sm_url).netloc.lower()
-        if sm_netloc and not is_same_domain(sm_netloc, target_netloc):
-            continue
+        batch = []
+        while sitemaps_to_process and len(batch) + len(processed_sitemaps) < 8:
+            sm_url = sitemaps_to_process.pop(0)
+            if sm_url in processed_sitemaps:
+                continue
+            sm_netloc = urlparse(sm_url).netloc.lower()
+            if sm_netloc and not is_same_domain(sm_netloc, target_netloc):
+                continue
+            processed_sitemaps.add(sm_url)
+            inv["infrastructure"]["sitemaps_discovered"].append(sm_url)
+            batch.append(sm_url)
 
-        processed_sitemaps.add(sm_url)
-        inv["infrastructure"]["sitemaps_discovered"].append(sm_url)
+        if not batch:
+            break
 
-        s_status, s_body, _, _ = safe_fetch(sm_url, timeout=8, max_bytes=2 * 1024 * 1024)
-        if s_status == 200 and s_body:
-            inv["infrastructure"]["sitemaps_processed"] += 1
-            child_sms, raw_page_urls = _parse_sitemap_xml(s_body)
-            for c_sm in child_sms:
-                if c_sm not in processed_sitemaps and is_same_domain(urlparse(c_sm).netloc, target_netloc):
-                    sitemaps_to_process.append(c_sm)
-            for pu in raw_page_urls:
-                if is_same_domain(urlparse(pu).netloc, target_netloc) and not is_sitemap_or_non_html_url(pu):
-                    extracted_page_urls.append(pu)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=min(6, len(batch))) as sm_pool:
+            futs = [sm_pool.submit(_fetch_sm, u) for u in batch]
+            for fut in concurrent.futures.as_completed(futs, timeout=6.0):
+                try:
+                    sm_url, s_status, s_body = fut.result()
+                    if s_status == 200 and s_body:
+                        inv["infrastructure"]["sitemaps_processed"] += 1
+                        child_sms, raw_page_urls = _parse_sitemap_xml(s_body)
+                        for c_sm in child_sms:
+                            if c_sm not in processed_sitemaps and is_same_domain(urlparse(c_sm).netloc, target_netloc):
+                                sitemaps_to_process.append(c_sm)
+                        for pu in raw_page_urls:
+                            if is_same_domain(urlparse(pu).netloc, target_netloc) and not is_sitemap_or_non_html_url(pu):
+                                extracted_page_urls.append(pu)
+                except Exception:
+                    pass
 
     # Also extract in-HTML links from homepage if sitemap yielded few URLs
     if len(extracted_page_urls) < 10 and html:
@@ -376,7 +391,7 @@ def build_inventory(site, max_pages=28, timeout_seconds=90, deadline=None):
             return None
         if deadline and time.monotonic() >= deadline:
             return None
-        p_status, p_html, p_headers, _ = safe_fetch(u, timeout=8, max_bytes=2 * 1024 * 1024, deadline=deadline)
+        p_status, p_html, p_headers, _ = safe_fetch(u, timeout=6, max_bytes=2 * 1024 * 1024, deadline=deadline)
         if p_html and is_html_response(p_headers, p_html):
             pt, pconf, ptmpl, ploc = classify_page(u, _extract_title(p_html))
             return {
@@ -395,7 +410,7 @@ def build_inventory(site, max_pages=28, timeout_seconds=90, deadline=None):
             }
         return None
 
-    executor = concurrent.futures.ThreadPoolExecutor(max_workers=8)
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=14)
     future_to_url = {executor.submit(fetch_url, u): u for u in selected_urls}
 
     try:
@@ -419,6 +434,7 @@ def build_inventory(site, max_pages=28, timeout_seconds=90, deadline=None):
         except TypeError:
             executor.shutdown(wait=False)
     inv["elapsed_seconds"] = round(time.monotonic() - start_mono, 1)
+    inv["sitemaps"] = [{"url": sm, "status": 200} for sm in inv["infrastructure"]["sitemaps_discovered"]]
 
     stats = {
         "homepage_reachable": True,

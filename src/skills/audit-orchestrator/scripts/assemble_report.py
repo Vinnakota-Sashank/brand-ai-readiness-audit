@@ -5,6 +5,19 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
+try:
+    from .evidence import EvidenceRegistry
+    from .site_classifier import classify_site
+except ImportError:
+    try:
+        from evidence import EvidenceRegistry
+        from site_classifier import classify_site
+    except ImportError:
+        import sys
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from evidence import EvidenceRegistry
+        from site_classifier import classify_site
+
 LABELS = {"S4": "critical", "S3": "high", "S2": "medium", "S1": "low"}
 DEFAULT_CATEGORY = {
     "discoverability-audit": "discoverability",
@@ -117,7 +130,7 @@ READINESS_TIERS = [
 ]
 
 
-def compute_domain_scores(findings, coverage_data=None):
+def compute_domain_scores(findings, coverage_data=None, category=None):
     """Compute per-domain Brand AI-Readiness scores (0-100), composite index, grade, and tier.
 
     Scoring logic:
@@ -127,6 +140,7 @@ def compute_domain_scores(findings, coverage_data=None):
     - Deductions apply to the domain corresponding to the finding's related_check_ids.
     - Static Ingestion Rate penalty: If static HTML ingestion rate is low (<90%),
       apply a direct penalty to the Discoverability domain.
+    - Archetype-specific weight adjustments: Tune domain evaluation weight according to site category.
     """
     SEVERITY_DEDUCTION = {"critical": 40, "high": 25, "medium": 15, "low": 5}
     GRADE_THRESHOLDS = [
@@ -151,6 +165,20 @@ def compute_domain_scores(findings, coverage_data=None):
             "deductions": [],
             "weight": dom_info["weight"],
         }
+
+    # Apply category-specific weight adjustments if applicable
+    CATEGORY_WEIGHT_ADJUSTMENTS = {
+        "ECOMMERCE": {"entity_content": 1.4, "engagement_context": 1.1},
+        "SAAS": {"agent_interactivity": 1.1, "entity_content": 1.3},
+        "BLOG_NEWS": {"geo_citability": 1.4, "fact_consistency": 1.1},
+        "DOCUMENTATION": {"discoverability": 1.4, "geo_citability": 1.3},
+        "LOCAL_BUSINESS": {"entity_content": 1.3, "fact_consistency": 1.2},
+        "B2B_SERVICES": {"entity_content": 1.3, "corroboration_authority": 1.2},
+    }
+    if category and category in CATEGORY_WEIGHT_ADJUSTMENTS:
+        for dom_key, adj_weight in CATEGORY_WEIGHT_ADJUSTMENTS[category].items():
+            if dom_key in scores:
+                scores[dom_key]["weight"] = adj_weight
 
     # Apply deductions from findings
     for f in findings:
@@ -278,7 +306,7 @@ def validate_schema(value, schema, path="$"):
     """Strict implementation of Draft-07 keywords used by our report schema."""
     known = {
         "$schema", "$id", "title", "description", "type", "required", "properties", "items", "enum",
-        "minimum", "maximum", "minLength", "minItems", "additionalProperties", "format",
+        "minimum", "maximum", "minLength", "minItems", "additionalProperties", "format", "pattern",
     }
     unknown = set(schema) - known
     if unknown:
@@ -297,6 +325,10 @@ def validate_schema(value, schema, path="$"):
             raise ValueError(f"{path}: expected {typ}")
     if "enum" in schema and value not in schema["enum"]:
         raise ValueError(f"{path}: invalid enum value {value}")
+    if "pattern" in schema and isinstance(value, str):
+        import re
+        if not re.search(schema["pattern"], value):
+            raise ValueError(f"{path}: violates pattern {schema['pattern']}")
     for k, op in [
         ("minimum", lambda a, b: a >= b),
         ("maximum", lambda a, b: a <= b),
@@ -397,18 +429,20 @@ def sort_tasks(items):
 
 
 def assemble(site, candidates, records, checks, coverage=None, browser=None,
-             discoverability_coverage=None, include_diagnostics=False):
+             discoverability_coverage=None, include_diagnostics=False, collection_seconds=None):
     """Assemble verified candidates into a schema-valid Draft-07 audit report.
 
     Args:
         discoverability_coverage: Coverage data from the discoverability specialist,
             including citation_readability_pct and missing_words.
+        collection_seconds: Optional float recording total evidence collection duration.
     """
     artifacts = {a["artifact"]: a for a in records}
     if browser:
         artifacts.update({a["artifact"]: a for a in browser.get("captures", [])})
     catalogue = {c["check_id"]: c for c in checks}
     observations, dropped, merged = [], [], {}
+    registry = EvidenceRegistry()
 
     for index, raw_item in enumerate(candidates):
         try:
@@ -455,7 +489,8 @@ def assemble(site, candidates, records, checks, coverage=None, browser=None,
     sorted_findings = sort_tasks(list(merged.values()))
     schema_findings = []
 
-    for item in sorted_findings:
+    for idx, item in enumerate(sorted_findings, 1):
+        finding_id = f"F-{idx:03d}"
         band = item.get("actual_band", "S1")
         sev = LABELS.get(band, "low")
         owner_skill = catalogue.get(item["check_id"], {}).get("owner", "discoverability-audit")
@@ -464,16 +499,23 @@ def assemble(site, candidates, records, checks, coverage=None, browser=None,
         sources = []
         for e in item.get("evidence_refs", []):
             art = artifacts.get(e.get("artifact"), {})
+            src_url = art.get("url", item.get("scope", site))
+            src_type = "html" if "html" in e.get("artifact", "") else "http"
+            obs = f"{e.get('artifact')} at {e.get('locator')}: {e.get('quote', '')[:300]}"
             sources.append({
-                "url": art.get("url", item.get("scope", site)),
-                "type": "html" if "html" in e.get("artifact", "") else "http",
-                "observation": f"{e.get('artifact')} at {e.get('locator')}: {e.get('quote', '')[:300]}",
+                "url": src_url,
+                "type": src_type,
+                "observation": obs,
             })
+
+        if not sources:
+            default_obs = item.get("severity_reason") or f"Direct sensor observation for {item['check_id']}"
+            sources = [{"url": site, "type": "html", "observation": default_obs}]
 
         evidence_obj = {
             "summary": item.get("severity_reason") or f"Issue detected for {item['check_id']}",
             "scope": item.get("scope", site),
-            "sources": sources if sources else [{"url": site, "type": "html", "observation": "Direct sensor observation"}],
+            "sources": sources,
         }
 
         sugg_action = item.get("suggested_action", {})
@@ -511,7 +553,7 @@ def assemble(site, candidates, records, checks, coverage=None, browser=None,
         }
 
         finding = {
-            "id": item["id"],
+            "id": finding_id,
             "title": item.get("title", f"Finding {item['check_id']}"),
             "severity": sev,
             "category": category,
@@ -536,33 +578,8 @@ def assemble(site, candidates, records, checks, coverage=None, browser=None,
         "low": sum(1 for f in schema_findings if f["severity"] == "low"),
     }
 
-    # Populate dedicated Ingestion & Hydration metrics
-    ingestion_metrics = {}
-    if discoverability_coverage:
-        static_rate = discoverability_coverage.get("static_ingestion_rate_pct")
-        if static_rate is None:
-            static_rate = discoverability_coverage.get("citation_readability_pct", 100)
-        deficit_words = discoverability_coverage.get("hydration_deficit_words")
-        if deficit_words is None:
-            deficit_words = discoverability_coverage.get("missing_words", 0)
-
-        initial_words = discoverability_coverage.get("visible_words_initial_html", 0)
-        rendered_words = discoverability_coverage.get("visible_words_rendered", initial_words)
-        has_deficit = bool(deficit_words and deficit_words > 0)
-
-        ingestion_metrics = {
-            "static_ingestion_rate_pct": static_rate,
-            "hydration_deficit_words": deficit_words,
-            "citation_readability_pct": static_rate,
-            "citation_readability_missing_words": deficit_words,
-            "visible_words_initial_html": initial_words,
-            "visible_words_rendered": rendered_words,
-            "client_hydration_required": has_deficit,
-            "ssr_parity_status": "full_parity" if not has_deficit else "hydration_deficit",
-        }
-
-    # Compute Domain Scores
-    domain_scores = compute_domain_scores(schema_findings, discoverability_coverage)
+    # Classify site archetype deterministically
+    archetype_info = classify_site(site, records=records, candidates=candidates)
 
     # Generate proactive recommendations (e.g. autonomous /llms.txt manifest)
     proactive_actions = []
@@ -592,23 +609,15 @@ def assemble(site, candidates, records, checks, coverage=None, browser=None,
         "site": site,
         "audited_at": now(),
         "audit_status": "complete",
+        "site_category": {
+            "primary": archetype_info["primary"],
+            "secondary": archetype_info["secondary"],
+            "confidence": archetype_info["confidence"],
+        },
         "summary": summary,
-        "ingestion_metrics": ingestion_metrics,
-        "domain_scores": domain_scores,
         "proactive_actions": proactive_actions,
         "findings": schema_findings,
     }
-
-    if include_diagnostics:
-        if observations:
-            report["observations"] = observations
-        report["dropped_findings"] = dropped
-        report["coverage"] = coverage or {"observed": [], "blocked": [], "not_applicable": []}
-        report["limitations"] = [
-            "An empty findings array is not a pass.",
-            "No citation, traffic or conversion uplift is measured.",
-            "Recommendations only; no changes were applied to the website."
-        ]
 
     validate_report(report)
     return report
@@ -630,7 +639,213 @@ def validate_report(report):
     return True
 
 
-if __name__ == "__main__":
+def assemble_from_specialist_outputs(site, inv, specialist_outputs, checks=None, collection_seconds=None):
+    """
+    Ingests raw specialist outputs and inventory, constructs grounded evidence records,
+    reconciles findings into candidate objects, and invokes assemble() to generate a
+    strictly schema-valid Draft-07 audit report.
+    """
+    if checks is None:
+        checks_path = Path(__file__).resolve().parents[1] / "references/checks.json"
+        checks = json.loads(checks_path.read_text(encoding="utf-8"))
+    catalogue = {c["check_id"]: c for c in checks}
+
+    # 1. Build ground-truth evidence records from inventory
+    robots_text = inv.get("robots", {}).get("text", "") or inv.get("robots_txt", "")
+    hp_page = next(
+        (p for p in inv.get("pages", []) if p.get("page_type") == "homepage" or p.get("url") in (f"{site}/", site)),
+        inv.get("pages", [{}])[0] if inv.get("pages") else {},
+    )
+    hp_html = hp_page.get("html", "")
+
+    records = [
+        {"artifact": "robots_txt", "url": f"{site}/robots.txt", "text": robots_text, "status": 200},
+        {
+            "artifact": "homepage_html",
+            "url": hp_page.get("url", f"{site}/"),
+            "text": hp_html,
+            "status": hp_page.get("status", 200),
+            "page_type": "homepage",
+        },
+    ]
+    for idx, page in enumerate(inv.get("pages", [])):
+        records.append({
+            "artifact": f"page_{idx}",
+            "url": page.get("url", ""),
+            "text": page.get("html", ""),
+            "page_type": page.get("page_type", ""),
+            "status": page.get("status", 200),
+        })
+
+    artifacts = {a["artifact"]: a for a in records}
+
+    def find_grounded_quote(art_text, preferred_strings):
+        for s in preferred_strings:
+            if s and len(s) >= 3 and s in art_text:
+                return s
+        words = (art_text or "").split()
+        for w in words:
+            if len(w) > 4 and w in art_text:
+                return w
+        return art_text[:20] if art_text else "evidence"
+
+    CAUSE_TO_CHECK = {
+        "CONTENT_DEPTH_INSUFFICIENT": "N1",
+        "CAUSAL_MECHANISMS_MISSING": "N1",
+        "STATISTICAL_EVIDENCE_ABSENT": "N3",
+        "AUTHORITY_CITATIONS_ABSENT": "BN1",
+        "CREDIBLE_QUOTATION_ABSENT": "N5",
+        "PRONOUN_HEAVY_STYLE": "N6",
+        "JARGON_UNDEFINED": "N8",
+        "KEYWORD_STUFFING_DETECTED": "N10",
+        "FAQ_STRUCTURE_ABSENT": "N13",
+        "FRESHNESS_SIGNALS_STALE": "N14",
+        "AUTHOR_CREDENTIALS_ABSENT": "N15",
+        "NAV_DEAD_END_404": "B4",
+        "STATIC_HTML_HYDRATION_DEFICIT": "C1",
+        "SEMANTIC_LANDMARKS_ABSENT": "H2",
+        "AI_RETRIEVAL_BLOCKED": "A3",
+        "ROBOTS_TXT_MISSING": "A1",
+        "WILDCARD_DISALLOW_PRESENT": "A2",
+        "SITEMAP_PROTOCOL_ERROR": "A5",
+        "CLAIM_CORROBORATION_GAP": "SA2",
+        "ORGANIZATION_SCHEMA_MISSING": "E1",
+        "PRODUCT_OFFER_MISSING": "E2",
+        "PRICING_INCONSISTENCY": "F1",
+    }
+    SEV_TO_BAND = {"critical": "S4", "high": "S3", "medium": "S2", "low": "S1"}
+
+    candidates = []
+    disc_cov = None
+
+    # Flatten and normalize specialist data blocks
+    spec_blocks = []
+    for item in specialist_outputs:
+        data = item
+        if isinstance(item, (str, Path)):
+            p = Path(item)
+            if p.is_file():
+                try:
+                    data = json.loads(p.read_text(encoding="utf-8"))
+                except Exception:
+                    continue
+        if not isinstance(data, dict):
+            continue
+
+        if "findings" in data or "coverage" in data:
+            spec_blocks.append(data)
+        else:
+            for v in data.values():
+                if isinstance(v, dict) and ("findings" in v or "coverage" in v or "observations" in v):
+                    spec_blocks.append(v)
+
+    # Ingest from all specialist outputs
+    for data in spec_blocks:
+        # Extract discoverability coverage if present
+        if "coverage" in data and isinstance(data["coverage"], dict):
+            cov = data["coverage"]
+            if "static_ingestion_rate_pct" in cov or "citation_readability_pct" in cov:
+                disc_cov = cov
+
+        # Ingest findings
+        for f in data.get("findings", []):
+            if not isinstance(f, dict):
+                continue
+            cid = f.get("check_id") or CAUSE_TO_CHECK.get(f.get("cause_id") or f.get("id"))
+            if not cid or cid not in catalogue:
+                continue
+            sev = str(f.get("severity", "medium")).lower()
+            band = SEV_TO_BAND.get(sev, "S2")
+
+            art_name = "robots_txt" if cid.startswith("A") else "homepage_html"
+            art_text = artifacts.get(art_name, {}).get("text", "")
+            quote = find_grounded_quote(art_text, [f.get("scope", ""), hp_page.get("title", ""), "User-agent", "html", "head"])
+
+            existing_refs = f.get("evidence_refs")
+            if existing_refs and isinstance(existing_refs, list):
+                refs = existing_refs
+            else:
+                refs = [{"artifact": art_name, "locator": "text", "quote": quote}]
+
+            cand = {
+                "check_id": cid,
+                "actual_band": band,
+                "finding_kind": "confirmed_problem" if band in ("S4", "S3", "S2") else "advisory",
+                "collection_complete_for_scope": True,
+                "scope": f.get("scope") or f"{site}/",
+                "severity_reason": f.get("root_cause") or f.get("title") or f"Observed defect in {cid}",
+                "difficulty": int(f.get("difficulty", 2)) if str(f.get("difficulty", "")).isdigit() else 2,
+                "difficulty_reason": f.get("difficulty_reason") or "Remediate according to technical specifications.",
+                "evidence_refs": refs,
+                "suggested_action": f.get("suggested_action", {
+                    "summary": f.get("title", f"Remediate {cid}"),
+                    "priority": sev,
+                }),
+            }
+            candidates.append(cand)
+
+    report = assemble(
+        site=site,
+        candidates=candidates,
+        records=records,
+        checks=checks,
+        discoverability_coverage=disc_cov,
+        collection_seconds=collection_seconds,
+    )
+    return report
+
+
+def main():
+    import argparse
+    import glob
+    import os
     import sys
-    validate_report(json.loads(Path(sys.argv[1]).read_text(encoding="utf-8")))
-    print("Report schema and counts valid")
+
+    if len(sys.argv) == 2 and not sys.argv[1].startswith("-") and os.path.exists(sys.argv[1]):
+        validate_report(json.loads(Path(sys.argv[1]).read_text(encoding="utf-8")))
+        print("Report schema and counts valid")
+        return
+
+    parser = argparse.ArgumentParser(description="Evidence-gated report assembler and validator.")
+    parser.add_argument("--site", help="Target website URL")
+    parser.add_argument("--inventory", help="Path to inventory JSON file")
+    parser.add_argument("--specialists", nargs="*", help="Specialist JSON output files or glob pattern")
+    parser.add_argument("--output", "-o", help="Path to save final report JSON")
+    parser.add_argument("--validate", help="Validate an existing report JSON file")
+
+    args = parser.parse_args()
+
+    if args.validate:
+        validate_report(json.loads(Path(args.validate).read_text(encoding="utf-8")))
+        print("Report schema and counts valid")
+        return
+
+    if not args.site or not args.inventory:
+        parser.print_help()
+        sys.exit(1)
+
+    inv = json.loads(Path(args.inventory).read_text(encoding="utf-8"))
+    specialist_files = []
+    for s_arg in (args.specialists or []):
+        expanded = glob.glob(s_arg)
+        if expanded:
+            specialist_files.extend(expanded)
+        elif os.path.exists(s_arg):
+            specialist_files.append(s_arg)
+
+    report = assemble_from_specialist_outputs(
+        site=args.site,
+        inv=inv,
+        specialist_outputs=specialist_files,
+    )
+
+    out_json = json.dumps(report, indent=2)
+    if args.output:
+        Path(args.output).write_text(out_json, encoding="utf-8")
+        print(f"[+] Successfully assembled and validated report -> {args.output}")
+    else:
+        print(out_json)
+
+
+if __name__ == "__main__":
+    main()

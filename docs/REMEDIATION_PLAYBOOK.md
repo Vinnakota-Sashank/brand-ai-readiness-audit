@@ -1,6 +1,6 @@
 # Dual-Track Remediation Playbook for Brand AI Readiness
 
-**Author:** Jayanth Reddy Konda & Research Engineering Team  
+**Author:** vinnakota sashank & Research Engineering Team
 **Version:** 2.0.0  
 **Standard:** Production Brand AI-Readiness & GEO Remediation Architecture
 

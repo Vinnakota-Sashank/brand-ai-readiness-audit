@@ -1,6 +1,6 @@
 # SSRF Defense & Network Security Architecture
 
-**Author:** Jayanth Reddy Konda
+**Author:** vinnakota sashank
 **Version:** 2.0.0
 **Module:** `safe_fetch.py` (present in every skill's `scripts/` directory)
 **Security Level:** Zero-Trust Hermetic Boundary

@@ -1,0 +1,178 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CategoryQueryRubrics",
+  "description": "Category-specific visitor questions and expected answerability components for Generative Engine Optimization (GEO).",
+  "rubrics": {
+    "ECOMMERCE": [
+      {
+        "type": "suitability",
+        "question": "Is this product suitable for my specific use case and requirements?",
+        "components": [
+          "product_specifications",
+          "compatibility_or_fit",
+          "material_or_ingredients",
+          "target_audience"
+        ]
+      },
+      {
+        "type": "commercial",
+        "question": "What is the exact price, currency, availability, and payment terms?",
+        "components": [
+          "unit_price_and_currency",
+          "stock_availability",
+          "discounts_or_bulk_pricing",
+          "taxes_or_fees"
+        ]
+      },
+      {
+        "type": "fulfillment",
+        "question": "What are the shipping timeframes, costs, return windows, and refund policies?",
+        "components": [
+          "shipping_destinations_and_fees",
+          "delivery_timeframes",
+          "return_window_days",
+          "refund_or_exchange_terms"
+        ]
+      }
+    ],
+    "SAAS": [
+      {
+        "type": "capability",
+        "question": "What core problem does this software solve, and what integrations are supported?",
+        "components": [
+          "primary_features",
+          "supported_integrations",
+          "supported_platforms_or_browsers",
+          "system_requirements"
+        ]
+      },
+      {
+        "type": "commercial",
+        "question": "Which pricing tier covers my team's volume, and is there a free trial?",
+        "components": [
+          "plan_comparison_matrix",
+          "monthly_vs_annual_pricing",
+          "seat_or_usage_limits",
+          "trial_terms_no_credit_card"
+        ]
+      },
+      {
+        "type": "onboarding",
+        "question": "How quickly can a new user deploy, configure, or get API keys?",
+        "components": [
+          "quickstart_guide",
+          "api_documentation_link",
+          "migration_or_import_support",
+          "sla_guarantees"
+        ]
+      }
+    ],
+    "BLOG_NEWS": [
+      {
+        "type": "explanation",
+        "question": "What core concept, event, or methodology does this article explain?",
+        "components": [
+          "executive_summary_or_abstract",
+          "key_factual_takeaways",
+          "author_credentials_and_byline",
+          "publication_or_revision_date"
+        ]
+      },
+      {
+        "type": "evidence",
+        "question": "What empirical data, research studies, or primary sources support this claim?",
+        "components": [
+          "named_citations_or_studies",
+          "numerical_data_or_statistics",
+          "direct_quotes_from_authorities",
+          "methodology_explanation"
+        ]
+      }
+    ],
+    "DOCUMENTATION": [
+      {
+        "type": "instructional",
+        "question": "How do I perform this specific implementation or configuration step by step?",
+        "components": [
+          "prerequisites_and_dependencies",
+          "annotated_code_samples",
+          "parameter_and_type_definitions",
+          "expected_response_or_output"
+        ]
+      },
+      {
+        "type": "troubleshooting",
+        "question": "What causes this error code or failure state, and how do I recover?",
+        "components": [
+          "error_code_or_message",
+          "root_cause_explanation",
+          "step_by_step_fix",
+          "fallback_or_workaround"
+        ]
+      }
+    ],
+    "B2B_SERVICES": [
+      {
+        "type": "suitability",
+        "question": "Does this consultancy or service provider have verified experience in my industry?",
+        "components": [
+          "industry_specializations",
+          "case_studies_with_metrics",
+          "client_logos_or_testimonials",
+          "compliance_certifications"
+        ]
+      },
+      {
+        "type": "engagement",
+        "question": "What is the typical project engagement model, pricing structure, and contact route?",
+        "components": [
+          "service_deliverables_scope",
+          "engagement_timeline",
+          "pricing_model_fixed_vs_hourly",
+          "sales_contact_or_calendar_booking"
+        ]
+      }
+    ],
+    "LOCAL_BUSINESS": [
+      {
+        "type": "visitation",
+        "question": "Where is the physical location, what are operating hours, and how do I get there?",
+        "components": [
+          "physical_street_address",
+          "daily_operating_hours",
+          "phone_number_and_email",
+          "parking_or_transit_instructions"
+        ]
+      },
+      {
+        "type": "offerings",
+        "question": "What services or products are available on-site, and how do I book an appointment?",
+        "components": [
+          "menu_or_service_list",
+          "appointment_booking_link",
+          "pricing_or_payment_options"
+        ]
+      }
+    ],
+    "GENERIC": [
+      {
+        "type": "suitability",
+        "question": "Who is this organization or website for, and what value does it deliver?",
+        "components": [
+          "clear_brand_identity",
+          "target_audience_definition",
+          "core_offerings_summary"
+        ]
+      },
+      {
+        "type": "actionability",
+        "question": "Where does a visitor navigate to explore services, request help, or contact support?",
+        "components": [
+          "primary_navigation_routes",
+          "contact_or_support_links",
+          "authoritative_about_page"
+        ]
+      }
+    ]
+  }
+}

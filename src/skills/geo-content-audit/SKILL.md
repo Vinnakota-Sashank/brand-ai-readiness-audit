@@ -13,7 +13,7 @@ metadata:
   role: specialist
   parent: audit-orchestrator
   version: "1.0.0"
-  author: "Jayanth Reddy Konda"
+   author: "vinnakota sashank"
 allowed-tools:
   - run_command
   - view_file
@@ -27,6 +27,8 @@ allowed-tools:
 | **Generative Engine Optimization (GEO) Scorer** | `python3 skills/geo-content-audit/scripts/geo_content_check.py --site https://example.com --inventory <inv> --state <state>` | `status`, `findings`, `recommendations` |
 
 > **Black-Box Tooling Principle:** Bundled scripts in `scripts/` are deterministic tools. Run `python3 scripts/<script>.py --help` for interface documentation.
+
+> **Sensor-Brain Contract:** `geo_content_check.py` produces deterministic citability measurements and candidate observations. The AI agent must read the source passage, preserve factual qualifiers, and write any replacement copy. Metrics indicate selection probability; they do not guarantee rankings or citations.
 
 Evaluates HTML content for AI citation and retrieval-augmented generation (RAG) extractability based on empirical Generative Engine Optimization research (Aggarwal et al., Princeton KDD 2024 and AutoGEO ICLR 2026). Determines whether content provides the causal mechanisms, statistical evidence, and structured definitions required for LLM citation.
 
@@ -48,6 +50,8 @@ Evaluates HTML content for AI citation and retrieval-augmented generation (RAG) 
 - `--inventory <path>`: (Optional) Pre-acquired site inventory JSON payload
 - `--state <path>`: (Optional) Shared Stateful Knowledge Graph file
 - `--format json`: Machine-readable JSON output mode
+
+Prefer the shared inventory so GEO scoring remains offline and reproducible. Do not use direct browser or URL-reading tools to supplement a missing inventory.
 
 ## References & Documentation Library
 
@@ -115,6 +119,11 @@ python3 skills/geo-content-audit/scripts/geo_content_check.py --site https://exa
    - Checks for Schema.org `FAQPage` / `Question` structured data and explicit Q&A heading anchors.
    - *Field Research Finding:* Sites with structured Q&A pairings were cited 2.5x more by Perplexity compared to flat narrative text.
 
+8. **Non-Fabrication and Placement:**
+   - Do not invent statistics, testimonials, quotations, credentials, or sources to improve a score.
+   - Preserve caveats, pricing conditions, geographic scope, and effective dates when restructuring a passage.
+   - Prefer concise answer-first blocks followed by mechanism and evidence; do not treat missing tags alone as a defect.
+
 ---
 
 ## Gotchas & False-Positive Boundaries
@@ -122,6 +131,7 @@ python3 skills/geo-content-audit/scripts/geo_content_check.py --site https://exa
 - Do NOT flag transactional pages (login, cart, checkout, account settings) for lack of explanatory mechanisms or statistics.
 - Do NOT flag short contact pages with standard headers as shallow content.
 - Do NOT emit heuristic tag absence (e.g. missing `<table>`) as a defect finding; tag absence is strictly a proactive recommendation.
+- Do NOT emit a citation guarantee from a heuristic score; report the measured limitation and the evidence supporting it.
 
 ---
 

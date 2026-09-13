@@ -12,7 +12,7 @@ metadata:
   role: specialist
   parent: audit-orchestrator
   version: "1.0.0"
-  author: "Jayanth Reddy Konda"
+   author: "vinnakota sashank"
 allowed-tools:
   - run_command
   - view_file
@@ -26,6 +26,8 @@ allowed-tools:
 | **Cross-Page Factual Consistency Ledger** | `python3 skills/fact-consistency-audit/scripts/fact_consistency_check.py --site https://example.com --inventory <inv> --state <state>` | `status`, `findings`, `recommendations` |
 
 > **Black-Box Tooling Principle:** Bundled scripts in `scripts/` are deterministic tools. Run `python3 scripts/<script>.py --help` for interface documentation.
+
+> **Sensor-Brain Contract:** `fact_consistency_check.py` constructs an evidence ledger and reports candidate discrepancies. The AI agent must reconcile scope and source before calling a contradiction, and must author the remediation. The sensor does not decide which first-party claim is true.
 
 Constructs a multi-attribute first-party fact ledger across sampled website pages. Detects verified commercial contradictions, product lifecycle conflicts (discontinued vs current), and legacy fact propagation.
 
@@ -48,6 +50,9 @@ Constructs a multi-attribute first-party fact ledger across sampled website page
 - `--inventory <path>`: (Optional) Pre-acquired site inventory JSON payload
 - `--state <path>`: (Optional) Shared Stateful Knowledge Graph file
 - `--format json`: Machine-readable JSON output mode
+- `--responses <path>` / `--observations <path>`: Optional observed assistant outputs for a separate first-party cross-check.
+
+Use the shared inventory as the sole acquisition artifact. Do not compare facts from pages that were not captured in that inventory.
 
 ## References & Documentation Library
 
@@ -93,6 +98,10 @@ python3 skills/fact-consistency-audit/scripts/fact_consistency_check.py --site h
 4. **Legacy Fact Propagation (`FACT.FRESHNESS.LEGACY_FACT_PROPAGATION`):**
    - Flag when copyright years differ by ≥ 2 years across active pages (e.g. 2022 on one route vs 2026 on another), indicating unmaintained legacy templates.
 
+5. **Structured Data vs Visible Text:**
+   - Treat a JSON-LD/DOM price or availability mismatch as a high-trust discrepancy only when the entity, variant, currency, billing interval, and page scope match.
+   - Every contradiction requires two exact observations from distinct artifacts or routes. A stale-looking date by itself is not proof of a current factual conflict.
+
 ---
 
 ## Output Format & Strict Mandate
@@ -108,6 +117,7 @@ Emits strictly valid JSON matching the schema with zero prose commentary:
 - **Strict Entity & Scope Matching:** Only flag price conflicts when facts share the identical entity, currency, billing interval, and product variant.
 - **Tiered Pricing Tables:** Do not flag multiple distinct price tiers (e.g. Starter $49 vs Pro $99) on the same page as a factual conflict.
 - **Footer Copyright Drift:** Varying copyright years across page templates should be emitted as a freshness recommendation, not a critical defect.
+- **No fabricated reconciliation:** When the evidence is ambiguous, emit an inconclusive or review-needed observation rather than choosing a preferred value.
 
 ## Security & SSRF Policy
 

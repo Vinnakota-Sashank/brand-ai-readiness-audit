@@ -1,6 +1,6 @@
 # Project Handoff & Stabilization Record
 
-**Author:** Jayanth Reddy Konda  
+**Author:** vinnakota sashank
 **Version:** 2.1.0  
 **Project:** Brand AI-Readiness & Visibility Audit Suite  
 **Date:** September 2, 2026  

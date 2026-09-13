@@ -1,6 +1,6 @@
 # Brand AI-Readiness Audit — Architecture
 
-**Author:** Jayanth Reddy Konda
+**Author:** vinnakota sashank
 **Version:** 2.0.0
 **Specification Compliance:** `agentskills.io` Standard & JSON Schema Draft-07
 

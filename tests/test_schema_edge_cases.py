@@ -58,7 +58,7 @@ class TestSchemaEdgeCases(unittest.TestCase):
             "summary": {"total_findings": 1, "critical": 0, "high": 1, "medium": 0, "low": 0},
             "findings": [
                 {
-                    "id": "f-1",
+                    "id": "F-001",
                     "title": "Robots Block",
                     "severity": "high",
                     "category": "discoverability",

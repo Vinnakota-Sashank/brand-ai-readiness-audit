@@ -2,7 +2,7 @@
 name = "adobe-brand-visibility-skill"
 version = "1.0.0"
 description = "Brand AI-Readiness & Visibility Marketplace - Adobe Hackathon Round 3"
-authors = [{ name = "Jayanth Reddy Konda" }]
+authors = [{ name = "vinnakota sashank" }]
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = []
